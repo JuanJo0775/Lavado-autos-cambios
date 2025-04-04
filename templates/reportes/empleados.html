@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Empleados - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Reporte de Rendimiento de Empleados{% endblock %}
+
+{% block header_actions %}
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">
+        <i class="bi bi-printer"></i> Imprimir
+    </button>
+    <a href="{{ url_for('reportes.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Reportes
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Selector de período -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('reportes.empleados') }}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="periodo" class="form-label">Período a analizar</label>
+                <select class="form-select" id="periodo" name="periodo">
+                    <option value="7" {% if periodo == 7 %}selected{% endif %}>Última semana</option>
+                    <option value="30" {% if periodo == 30 %}selected{% endif %}>Último mes</option>
+                    <option value="90" {% if periodo == 90 %}selected{% endif %}>Últimos 3 meses</option>
+                    <option value="180" {% if periodo == 180 %}selected{% endif %}>Últimos 6 meses</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted">
+                    Período analizado: <strong>{{ fecha_inicio.strftime('%d/%m/%Y') }}</strong> al <strong>{{ fecha_fin.strftime('%d/%m/%Y') }}</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Actualizar Análisis
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resumen general -->
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Resumen de Rendimiento</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Empleado</th>
+                                <th class="text-center">Servicios Totales</th>
+                                <th class="text-center">Completados</th>
+                                <th class="text-center">Eficiencia</th>
+                                <th class="text-center">Tiempo Promedio</th>
+                                <th class="text-end">Ingresos Generados</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for empleado in empleados %}
+                            <tr>
+                                <td>
+                                    <strong>{{ empleado.nombre }}</strong>
+                                </td>
+                                <td class="text-center">{{ empleado.servicios_total }}</td>
+                                <td class="text-center">{{ empleado.servicios_completados }}</td>
+                                <td class="text-center">
+                                    {% if empleado.servicios_total > 0 %}
+                                    <div class="progress" style="height: 15px;">
+                                        {% set eficiencia = (empleado.servicios_completados / empleado.servicios_total) * 100 %}
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ eficiencia }}%" 
+                                             aria-valuenow="{{ eficiencia }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ eficiencia|int }}%
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if empleado.tiempo_promedio %}
+                                    <span class="badge bg-info">{{ empleado.tiempo_promedio|int }} min</span>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">${{ empleado.ingresos_generados|round(2) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="bi bi-people fs-3 mb-3 d-block"></i>
+                                        No hay datos de empleados para el período seleccionado.
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos de rendimiento -->
+{% if empleados|length > 0 %}
+<div class="row">
+    <!-- Servicios por empleado -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Servicios por Empleado</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="serviciosChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tiempo promedio por empleado -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Tiempo Promedio por Servicio</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="tiemposChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detalles por empleado (acordeón) -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Análisis Detallado por Empleado</h6>
+    </div>
+    <div class="card-body">
+        <div class="accordion" id="accordionEmpleados">
+            {% for empleado in empleados %}
+            <div class="accordion-item mb-3 border">
+                <h2 class="accordion-header" id="heading{{ empleado.id }}">
+                    <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ empleado.id }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="collapse{{ empleado.id }}">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <span>{{ empleado.nombre }}</span>
+                            <span class="badge bg-primary me-3">{{ empleado.servicios_completados }} servicios</span>
+                        </div>
+                    </button>
+                </h2>
+                <div id="collapse{{ empleado.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" aria-labelledby="heading{{ empleado.id }}" data-bs-parent="#accordionEmpleados">
+                    <div class="accordion-body">
+                        <div class="row">
+                            <!-- Estadísticas del empleado -->
+                            <div class="col-md-6 mb-3">
+                                <h6 class="border-bottom pb-2">Estadísticas Generales</h6>
+                                <div class="row">
+                                    <div class="col-6 text-muted">Servicios Totales:</div>
+                                    <div class="col-6">{{ empleado.servicios_total }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6 text-muted">Servicios Completados:</div>
+                                    <div class="col-6">{{ empleado.servicios_completados }}</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6 text-muted">Tasa de Completitud:</div>
+                                    <div class="col-6">
+                                        {% if empleado.servicios_total > 0 %}
+                                        {{ ((empleado.servicios_completados / empleado.servicios_total) * 100)|round(1) }}%
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6 text-muted">Tiempo Promedio:</div>
+                                    <div class="col-6">
+                                        {% if empleado.tiempo_promedio %}
+                                        {{ empleado.tiempo_promedio|int }} minutos
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6 text-muted">Ingresos Generados:</div>
+                                    <div class="col-6">${{ empleado.ingresos_generados|round(2) }}</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tipos de lavado realizados -->
+                            <div class="col-md-6 mb-3">
+                                <h6 class="border-bottom pb-2">Tipos de Lavado Realizados</h6>
+                                <ul class="list-group list-group-flush">
+                                    {% for tipo, data in empleado.tipos_lavado.items() %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {{ tipo }}
+                                        <span class="badge bg-primary rounded-pill">{{ data.count }}</span>
+                                    </li>
+                                    {% else %}
+                                    <li class="list-group-item text-muted">No hay datos disponibles</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Análisis de rendimiento -->
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-lightbulb me-2"></i>
+                            {% if empleado.tiempo_promedio %}
+                                {% if empleado.tiempo_promedio < 30 %}
+                                <strong>Rendimiento Excelente:</strong> El empleado completa los servicios en un tiempo menor al promedio.
+                                {% elif empleado.tiempo_promedio < 45 %}
+                                <strong>Rendimiento Normal:</strong> El empleado completa los servicios en un tiempo promedio.
+                                {% else %}
+                                <strong>Oportunidad de Mejora:</strong> El tiempo promedio de servicio es superior al estándar. Considere capacitación adicional.
+                                {% endif %}
+                            {% else %}
+                                <strong>Sin datos suficientes:</strong> No hay suficiente información para analizar el rendimiento.
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Recomendaciones y conclusiones -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Recomendaciones y Conclusiones</h6>
+    </div>
+    <div class="card-body">
+        {% if empleados|length > 0 %}
+        {% set mejor_empleado = empleados|sort(attribute='servicios_completados')|reverse|first %}
+        {% set mas_rapido = empleados|selectattr('tiempo_promedio', 'defined')|sort(attribute='tiempo_promedio')|first %}
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Análisis de Rendimiento</h6>
+                <ul class="mb-4">
+                    <li class="mb-2">El empleado con mayor productividad es <strong>{{ mejor_empleado.nombre }}</strong> con {{ mejor_empleado.servicios_completados }} servicios completados.</li>
+                    {% if mas_rapido %}
+                    <li class="mb-2">El empleado más eficiente es <strong>{{ mas_rapido.nombre }}</strong> con un tiempo promedio de {{ mas_rapido.tiempo_promedio|int }} minutos por servicio.</li>
+                    {% endif %}
+                    <li class="mb-2">La tasa promedio de completitud de servicios es del {{ (empleados|sum(attribute='servicios_completados') / empleados|sum(attribute='servicios_total') * 100)|round(1) if empleados|sum(attribute='servicios_total') > 0 else 0 }}%.</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Recomendaciones</h6>
+                <ul class="mb-0">
+                    <li class="mb-2">Implementar un programa de reconocimiento para premiar el rendimiento destacado.</li>
+                    <li class="mb-2">Organizar capacitaciones para mejorar los tiempos de servicio de los empleados con promedios más altos.</li>
+                    <li class="mb-2">Considerar la rotación de personal en diferentes tipos de vehículos para mejorar la versatilidad.</li>
+                    <li class="mb-2">Evaluar la posibilidad de bonificaciones por productividad para incentivar la eficiencia.</li>
+                </ul>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-3">
+            <i class="bi bi-exclamation-circle text-warning fs-1 mb-3"></i>
+            <h5>No hay datos suficientes</h5>
+            <p class="text-muted">No hay información de rendimiento para el período seleccionado. Intente ampliar el rango de fechas o verificar que existan servicios registrados.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if empleados|length > 0 %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gráfico: Servicios por Empleado
+        const ctxServicios = document.getElementById('serviciosChart').getContext('2d');
+        
+        // Datos para gráfico de servicios
+        const serviciosData = {
+            labels: [
+                {% for empleado in empleados %}
+                '{{ empleado.nombre }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Servicios Completados',
+                data: [
+                    {% for empleado in empleados %}
+                    {{ empleado.servicios_completados }},
+                    {% endfor %}
+                ],
+                backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                borderWidth: 0
+            }]
+        };
+        
+        new Chart(ctxServicios, {
+            type: 'bar',
+            data: serviciosData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Cantidad de Servicios'
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // Gráfico: Tiempo Promedio por Empleado
+        const ctxTiempos = document.getElementById('tiemposChart').getContext('2d');
+        
+        // Filtrar empleados con tiempo promedio definido
+        const empleadosConTiempo = [
+            {% for empleado in empleados %}
+            {% if empleado.tiempo_promedio %}
+            {
+                nombre: '{{ empleado.nombre }}',
+                tiempo: {{ empleado.tiempo_promedio|int }}
+            },
+            {% endif %}
+            {% endfor %}
+        ];
+        
+        // Ordenar por tiempo (ascendente)
+        empleadosConTiempo.sort((a, b) => a.tiempo - b.tiempo);
+        
+        // Datos para gráfico de tiempos
+        const tiemposData = {
+            labels: empleadosConTiempo.map(e => e.nombre),
+            datasets: [{
+                label: 'Minutos por Servicio',
+                data: empleadosConTiempo.map(e => e.tiempo),
+                backgroundColor: 'rgba(28, 200, 138, 0.8)',
+                borderWidth: 0
+            }]
+        };
+        
+        new Chart(ctxTiempos, {
+            type: 'bar',
+            data: tiemposData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Tiempo (minutos)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

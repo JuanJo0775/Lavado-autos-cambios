@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizar Producto - LavadoAutos</title>
+    <!-- CSS Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Iconos Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            margin-bottom: 30px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 20px 0;
+            margin-top: 60px;
+        }
+        .solicitud-info {
+            background-color: rgba(13, 110, 253, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="bi bi-droplet-half me-2"></i>
+                <strong>LavadoAutos</strong>
+                <span class="ms-2 badge bg-light text-primary">Portal de Proveedores</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('cotizaciones.publico_portal', proveedor_id=proveedor.Id) }}">
+                            <i class="bi bi-house-door"></i> Inicio
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">
+                            <i class="bi bi-currency-dollar"></i> Cotizar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light" href="{{ url_for('cotizaciones.publico_index') }}">
+                            <i class="bi bi-box-arrow-right"></i> Salir
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="container mb-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="bi bi-currency-dollar me-2"></i>Cotizar Producto</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="solicitud-info mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">Información del Producto</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <div class="text-muted">Producto:</div>
+                                    <div class="fw-bold fs-5">{{ solicitud.insumo.Nombre }}</div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="text-muted">Cantidad Requerida:</div>
+                                    <div class="fw-bold">{{ solicitud.Cantidad_Requerida }} unidades</div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <div class="text-muted">Fecha de Publicación:</div>
+                                    <div>{{ solicitud.Fecha_Publicacion.strftime('%d/%m/%Y') }}</div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="text-muted">Fecha Límite:</div>
+                                    <div>
+                                        {% if solicitud.Fecha_Limite %}
+                                        <span class="badge bg-danger">{{ solicitud.Fecha_Limite.strftime('%d/%m/%Y') }}</span>
+                                        {% else %}
+                                        <span class="text-muted">Sin fecha límite</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% if solicitud.Descripcion %}
+                            <div class="mt-2">
+                                <div class="text-muted">Descripción:</div>
+                                <div>{{ solicitud.Descripcion }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <form method="POST" action="{{ url_for('cotizaciones.publico_cotizar', proveedor_id=proveedor.Id, solicitud_id=solicitud.Id) }}">
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-2 mb-3">Su Cotización</h5>
+
+                                <div class="mb-3">
+                                    <label for="precio" class="form-label">Precio por Unidad <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="precio" name="precio" step="0.01" min="0.01" required
+                                               value="{{ cotizacion.Precio if cotizacion else '' }}"
+                                               placeholder="Precio unitario que ofrece">
+                                    </div>
+                                    <div class="form-text">Ingrese el precio unitario (por unidad) sin impuestos</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="observaciones" class="form-label">Observaciones o Condiciones</label>
+                                    <textarea class="form-control" id="observaciones" name="observaciones" rows="3"
+                                              placeholder="Información adicional: tiempo de entrega, condiciones especiales, etc...">{{ cotizacion.Observaciones if cotizacion else '' }}</textarea>
+                                </div>
+
+                                <div class="alert alert-info">
+                                    <div class="d-flex">
+                                        <i class="bi bi-info-circle fs-4 me-3"></i>
+                                        <div>
+                                            <p class="mb-0">Su cotización será revisada por nuestro equipo. Le notificaremos cuando sea aprobada o rechazada.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2 mt-4">
+                                    <button type="submit" class="btn btn-primary py-2">
+                                        <i class="bi bi-send me-2"></i>{{ 'Actualizar Cotización' if cotizacion else 'Enviar Cotización' }}
+                                    </button>
+                                    <a href="{{ url_for('cotizaciones.publico_portal', proveedor_id=proveedor.Id) }}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-arrow-left me-2"></i>Volver al Portal
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+
+                        {% if cotizacion %}
+                        <div class="border-top pt-4 mt-4">
+                            <h5 class="text-muted">Información de Cotización Actual</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="text-muted">Fecha de envío:</div>
+                                    <div>{{ cotizacion.Fecha_Cotizacion.strftime('%d/%m/%Y %H:%M') }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted">Estado:</div>
+                                    <div>
+                                        {% if cotizacion.Estado == 'Pendiente' %}
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                        {% elif cotizacion.Estado == 'Aprobada' %}
+                                        <span class="badge bg-success">Aprobada</span>
+                                        {% elif cotizacion.Estado == 'Rechazada' %}
+                                        <span class="badge bg-danger">Rechazada</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>LavadoAutos - Portal de Proveedores</h5>
+                    <p>Sistema de cotización de productos para proveedores.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>Si tiene problemas con el sistema, contacte a: <strong>soporte@lavadoautos.com</strong></p>
+                </div>
+            </div>
+            <hr class="bg-white">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2025 LavadoAutos. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

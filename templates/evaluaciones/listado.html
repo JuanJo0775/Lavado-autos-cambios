@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluaciones de Servicio - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Evaluaciones de Servicio{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('evaluaciones.reporte') }}" class="btn btn-sm btn-outline-primary me-2">
+        <i class="bi bi-bar-chart"></i> Ver Reporte
+    </a>
+    <a href="{{ url_for('servicios.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Servicios
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Resumen de evaluaciones -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-star-fill text-warning me-2"></i>Evaluaciones de Clientes</h5>
+                <p class="card-text">Este módulo muestra las evaluaciones que los clientes han realizado sobre nuestros servicios. Las evaluaciones proporcionan información valiosa para mejorar la calidad del servicio.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de evaluaciones -->
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Evaluaciones Recibidas</h6>
+        <span class="badge bg-primary">{{ evaluaciones|length }} evaluaciones</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Fecha</th>
+                        <th>Servicio</th>
+                        <th>Vehículo</th>
+                        <th>Tiempo de Espera</th>
+                        <th>Amabilidad</th>
+                        <th>Calidad</th>
+                        <th>Promedio</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evaluacion, servicio in evaluaciones %}
+                    <tr>
+                        <td>{{ evaluacion.Id }}</td>
+                        <td>{{ evaluacion.Fecha_Evaluacion.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>
+                            <a href="{{ url_for('servicios.detalle', id=servicio.Id) }}">
+                                Servicio #{{ servicio.Id }}
+                            </a>
+                        </td>
+                        <td>{{ servicio.Placa }}</td>
+                        <td>
+                            <div class="d-flex">
+                                {% for i in range(5) %}
+                                <i class="bi bi-star{% if loop.index <= evaluacion.Tiempo_Espera %}-fill text-warning{% endif %} me-1"></i>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex">
+                                {% for i in range(5) %}
+                                <i class="bi bi-star{% if loop.index <= evaluacion.Amabilidad %}-fill text-warning{% endif %} me-1"></i>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex">
+                                {% for i in range(5) %}
+                                <i class="bi bi-star{% if loop.index <= evaluacion.Calidad_Servicio %}-fill text-warning{% endif %} me-1"></i>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if evaluacion.calificacion_promedio >= 4 %}bg-success{% elif evaluacion.calificacion_promedio >= 3 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ evaluacion.calificacion_promedio }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalComentario{{ evaluacion.Id }}">
+                                <i class="bi bi-chat-text"></i> Comentario
+                            </button>
+                        </td>
+                    </tr>
+                    
+                    <!-- Modal para mostrar comentario -->
+                    <div class="modal fade" id="modalComentario{{ evaluacion.Id }}" tabindex="-1" aria-labelledby="modalComentarioLabel{{ evaluacion.Id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalComentarioLabel{{ evaluacion.Id }}">Comentario de Evaluación #{{ evaluacion.Id }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <h6 class="border-bottom pb-2">Información del Servicio</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="text-muted small">Servicio:</div>
+                                                <div>#{{ servicio.Id }}</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="text-muted small">Fecha:</div>
+                                                <div>{{ servicio.Fecha.strftime('%d/%m/%Y') }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-md-6">
+                                                <div class="text-muted small">Vehículo:</div>
+                                                <div>{{ servicio.Placa }}</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="text-muted small">Tipo de Lavado:</div>
+                                                <div>{{ servicio.tipo_lavado.Nombre if servicio.tipo_lavado else "N/A" }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <h6 class="border-bottom pb-2">Calificaciones</h6>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="text-muted small">Tiempo de Espera:</div>
+                                                <div class="d-flex">
+                                                    {% for i in range(5) %}
+                                                    <i class="bi bi-star{% if loop.index <= evaluacion.Tiempo_Espera %}-fill text-warning{% endif %} me-1"></i>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="text-muted small">Amabilidad:</div>
+                                                <div class="d-flex">
+                                                    {% for i in range(5) %}
+                                                    <i class="bi bi-star{% if loop.index <= evaluacion.Amabilidad %}-fill text-warning{% endif %} me-1"></i>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="text-muted small">Calidad:</div>
+                                                <div class="d-flex">
+                                                    {% for i in range(5) %}
+                                                    <i class="bi bi-star{% if loop.index <= evaluacion.Calidad_Servicio %}-fill text-warning{% endif %} me-1"></i>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <h6 class="border-bottom pb-2">Comentario</h6>
+                                        <div class="bg-light p-3 rounded">
+                                            {% if evaluacion.Comentario %}
+                                            {{ evaluacion.Comentario }}
+                                            {% else %}
+                                            <span class="text-muted">No se proporcionó ningún comentario.</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-star text-muted mb-3" style="font-size: 2.5rem;"></i>
+                                <h5 class="text-muted">No hay evaluaciones registradas</h5>
+                                <p class="text-muted mb-3">Aún no se han recibido evaluaciones de los clientes.</p>
+                                <p>Para generar un enlace de evaluación, vaya al detalle de un servicio completado.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

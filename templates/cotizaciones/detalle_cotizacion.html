@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Cotización #{{ cotizacion.Id }} - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Detalle de Cotización #{{ cotizacion.Id }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('cotizaciones.listar_cotizaciones') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Cotizaciones
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5 class="border-bottom pb-2">Información del Insumo</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Insumo:</div>
+                            <div class="fw-bold">{{ cotizacion.insumo.Nombre }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Categoría:</div>
+                            <div>{{ cotizacion.insumo.tipo_insumo.Nombre }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h5 class="border-bottom pb-2">Información del Proveedor</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Empresa:</div>
+                            <div class="fw-bold">{{ cotizacion.proveedor.Nombre }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Contacto:</div>
+                            <div>{{ cotizacion.proveedor.Contacto }}</div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Email:</div>
+                            <div>{{ cotizacion.proveedor.Email }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Teléfono:</div>
+                            <div>{{ cotizacion.proveedor.Telefono }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h5 class="border-bottom pb-2">Detalles de la Cotización</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Precio Ofrecido:</div>
+                            <div class="h4 text-primary">${{ cotizacion.Precio }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Fecha:</div>
+                            <div>{{ cotizacion.Fecha_Cotizacion.strftime('%d/%m/%Y %H:%M') }}</div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="text-muted small">Estado:</div>
+                            <div>
+                                {% if cotizacion.Estado == 'Pendiente' %}
+                                <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% elif cotizacion.Estado == 'Aprobada' %}
+                                <span class="badge bg-success">Aprobada</span>
+                                {% elif cotizacion.Estado == 'Rechazada' %}
+                                <span class="badge bg-danger">Rechazada</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h5 class="border-bottom pb-2">Observaciones</h5>
+                    <div class="bg-light p-3 rounded">
+                        {% if cotizacion.Observaciones %}
+                        {{ cotizacion.Observaciones }}
+                        {% else %}
+                        <span class="text-muted">Sin observaciones</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if cotizacion.Estado == 'Pendiente' %}
+                <div class="d-flex justify-content-end mt-4">
+                    <form method="POST" action="{{ url_for('cotizaciones.aprobar_cotizacion', id=cotizacion.Id) }}" class="me-2">
+                        <button type="submit" class="btn btn-success" 
+                                onclick="return confirm('¿Está seguro de aprobar esta cotización?')">
+                            <i class="bi bi-check"></i> Aprobar Cotización
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('cotizaciones.rechazar_cotizacion', id=cotizacion.Id) }}">
+                        <button type="submit" class="btn btn-danger" 
+                                onclick="return confirm('¿Está seguro de rechazar esta cotización?')">
+                            <i class="bi bi-x"></i> Rechazar Cotización
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

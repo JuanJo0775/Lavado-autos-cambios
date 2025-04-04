@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Categoría de Insumo - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Nueva Categoría de Insumo{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('insumos.listar_tipos') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Categorías
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-tags text-primary" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">Nueva Categoría de Insumo</h4>
+                    <p class="text-muted">Complete la información para crear una nueva categoría para clasificar los insumos</p>
+                </div>
+
+                <form method="POST" action="{{ url_for('insumos.crear_tipo') }}">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required 
+                                   value="{{ valores.nombre if valores is defined else '' }}"
+                                   placeholder="Ej: Productos de Limpieza">
+                            <div class="form-text">Elija un nombre descriptivo y único para la categoría</div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="3" 
+                                      placeholder="Describa el propósito de esta categoría...">{{ valores.descripcion if valores is defined else '' }}</textarea>
+                        </div>
+                        
+                        <div class="col-12 mt-3">
+                            <div class="alert alert-info">
+                                <div class="d-flex">
+                                    <i class="bi bi-info-circle fs-4 me-2"></i>
+                                    <div>
+                                        <strong>¿Por qué crear categorías?</strong>
+                                        <p class="mb-0">Las categorías le permiten organizar los insumos según su tipo o función, facilitando su gestión, búsqueda y análisis en reportes.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary py-2">
+                                <i class="bi bi-save me-2"></i> Crear Categoría
+                            </button>
+                            <a href="{{ url_for('insumos.listar_tipos') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Recomendaciones para Categorías</h5>
+            </div>
+            <div class="card-body">
+                <p>Una buena estructura de categorías facilita la gestión de inventario. Aquí hay algunas sugerencias:</p>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100 border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title"><i class="bi bi-check-circle text-success me-2"></i>Categorías Recomendadas</h6>
+                                <ul class="mb-0">
+                                    <li>Productos de Limpieza</li>
+                                    <li>Herramientas</li>
+                                    <li>Accesorios de Lavado</li>
+                                    <li>Productos para Detallado</li>
+                                    <li>Equipamiento</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100 border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title"><i class="bi bi-x-circle text-danger me-2"></i>Evite Categorías Como</h6>
+                                <ul class="mb-0">
+                                    <li>Categorías demasiado específicas</li>
+                                    <li>Nombres ambiguos o genéricos</li>
+                                    <li>Categorías que se solapan mucho</li>
+                                    <li>Más de 10 categorías principales</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

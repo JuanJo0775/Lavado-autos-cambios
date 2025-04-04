@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Stock - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Registrar Entrada de Stock{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('inventario.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Inventario
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-box-seam text-success" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">Registro de Entrada de Stock</h4>
+                    <p class="text-muted">Complete la información para registrar la entrada de nuevos insumos al inventario</p>
+                </div>
+
+                <form method="POST" action="{{ url_for('inventario.registrar') }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="insumo" class="form-label">Insumo <span class="text-danger">*</span></label>
+                            <select class="form-select" id="insumo" name="insumo" required>
+                                <option value="">Seleccione un insumo</option>
+                                {% for insumo in insumos %}
+                                <option value="{{ insumo.Id }}"
+                                        {% if valores is defined and valores.insumo|int == insumo.Id %}selected{% endif %}
+                                        {% if request.args.get('insumo')|int == insumo.Id %}selected{% endif %}>
+                                    {{ insumo.Nombre }} - ${{ insumo.Precio_Unitario }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                <a href="{{ url_for('insumos.registrar') }}">
+                                    <i class="bi bi-plus-circle"></i> Registrar nuevo insumo
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="stock" class="form-label">Cantidad <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="stock" name="stock" required
+                                   value="{{ valores.stock if valores is defined else '1' }}"
+                                   min="1" step="1">
+                            <div class="form-text">Número de unidades que ingresan al inventario</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="proveedor" class="form-label">Proveedor</label>
+                            <input type="text" class="form-control" id="proveedor" name="proveedor"
+                                   value="{{ valores.proveedor if valores is defined else '' }}"
+                                   placeholder="Empresa o persona que provee el insumo">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="factura" class="form-label">Número de Factura</label>
+                            <input type="text" class="form-control" id="factura" name="factura"
+                                   value="{{ valores.factura if valores is defined else '' }}"
+                                   placeholder="Referencia de compra (opcional)">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="fecha_compra" class="form-label">Fecha de Compra</label>
+                            <input type="date" class="form-control" id="fecha_compra" name="fecha_compra"
+                                   value="{{ valores.fecha_compra if valores is defined else '' }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="estado" class="form-label">Estado <span class="text-danger">*</span></label>
+                            <select class="form-select" id="estado" name="estado" required>
+                                <option value="1"
+                                        {% if valores is defined and valores.estado|int == 1 %}selected{% endif %}>
+                                    Disponible
+                                </option>
+                                <option value="0"
+                                        {% if valores is defined and valores.estado|int == 0 %}selected{% endif %}>
+                                    No Disponible
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="observaciones" class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="observaciones" name="observaciones" rows="3"
+                                      placeholder="Notas adicionales sobre la entrada de stock...">{{ valores.observaciones if valores is defined else '' }}</textarea>
+                        </div>
+
+                        <div class="col-12 d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary py-2">
+                                <i class="bi bi-save me-2"></i> Registrar Entrada
+                            </button>
+                            <a href="{{ url_for('inventario.listar') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Panel de información -->
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información de Stock</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex">
+                        <i class="bi bi-lightbulb fs-4 me-3"></i>
+                        <div>
+                            <strong>¿Cómo funciona el stock?</strong>
+                            <p class="mb-0">Al registrar un insumo, este se suma al inventario existente. Si el insumo ya existe en el inventario, la cantidad se acumula al stock actual.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="insumoInfo" class="d-none">
+                    <h6 class="border-bottom pb-2 mb-3">Información del Insumo Seleccionado</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <span class="text-muted">Nombre:</span>
+                                <div class="fw-bold" id="insumoNombre">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <span class="text-muted">Categoría:</span>
+                                <div id="insumoCategoria">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <span class="text-muted">Stock Actual:</span>
+                                <div id="insumoStock">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <span class="text-muted">Precio Unitario:</span>
+                                <div class="text-primary" id="insumoPrecio">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const insumoSelect = document.getElementById('insumo');
+        const insumoInfo = document.getElementById('insumoInfo');
+        const insumoNombre = document.getElementById('insumoNombre');
+        const insumoCategoria = document.getElementById('insumoCategoria');
+        const insumoStock = document.getElementById('insumoStock');
+        const insumoPrecio = document.getElementById('insumoPrecio');
+
+        // Datos simulados de insumos (en una aplicación real, estos datos vendrían del servidor)
+        const insumosData = {
+            {% for insumo in insumos %}
+            "{{ insumo.Id }}": {
+                nombre: "{{ insumo.Nombre }}",
+                categoria: "{{ insumo.tipo_insumo.Nombre }}",
+                stock: {{ insumo.stock_actual }},
+                precio: "{{ insumo.Precio_Unitario }}"
+            },
+            {% endfor %}
+        };
+
+        // Función para mostrar información del insumo seleccionado
+        insumoSelect.addEventListener('change', function() {
+            const insumoId = this.value;
+
+            if (insumoId && insumosData[insumoId]) {
+                const insumo = insumosData[insumoId];
+
+                insumoNombre.textContent = insumo.nombre;
+                insumoCategoria.textContent = insumo.categoria;
+                insumoStock.textContent = insumo.stock;
+                insumoPrecio.textContent = '$' + insumo.precio;
+
+                insumoInfo.classList.remove('d-none');
+            } else {
+                insumoInfo.classList.add('d-none');
+            }
+        });
+
+        // Disparar el evento change para mostrar la información si ya hay un insumo seleccionado
+        if (insumoSelect.value) {
+            insumoSelect.dispatchEvent(new Event('change'));
+        }
+    });
+</script>
+{% endblock %}

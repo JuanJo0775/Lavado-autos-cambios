@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Insumos con Stock Bajo - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Insumos con Stock Bajo{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('inventario.registrar') }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-plus-lg"></i> Agregar Stock
+    </a>
+    <a href="{{ url_for('insumos.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Insumos
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Resumen de situación -->
+<div class="alert alert-warning mb-4">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle-fill me-3 fs-3"></i>
+        <div>
+            <h5 class="alert-heading mb-1">Alerta de Stock Bajo</h5>
+            <p class="mb-0">Se han detectado <strong>{{ insumos|length }}</strong> insumos con niveles críticos de stock (menos de 10 unidades). Se recomienda reponer estos insumos a la brevedad para evitar interrupciones en el servicio.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de insumos con stock bajo -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Insumos con Stock Crítico</h6>
+        <div>
+            {% if insumos %}
+            <button class="btn btn-sm btn-outline-secondary me-2" onclick="window.print()">
+                <i class="bi bi-printer"></i> Imprimir
+            </button>
+            <a href="{{ url_for('inventario.registrar') }}" class="btn btn-sm btn-warning">
+                <i class="bi bi-plus-lg"></i> Reponer Stock
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Insumo</th>
+                        <th>Tipo</th>
+                        <th class="text-center">Stock Actual</th>
+                        <th>Estado Stock</th>
+                        <th class="text-end">Precio Unitario</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for insumo in insumos %}
+                    <tr>
+                        <td>{{ insumo.Id }}</td>
+                        <td>
+                            <strong>{{ insumo.Nombre }}</strong>
+                            {% if insumo.stock_actual == 0 %}
+                            <span class="badge bg-danger ms-2">Agotado</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ insumo.tipo_insumo.Nombre }}</td>
+                        <td class="text-center">
+                            {% if insumo.stock_actual == 0 %}
+                            <span class="badge bg-danger">0</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">{{ insumo.stock_actual }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 10px;">
+                                {% set porcentaje = (insumo.stock_actual / 30) * 100 %}
+                                <div class="progress-bar {% if insumo.stock_actual == 0 %}bg-danger{% else %}bg-warning{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ porcentaje }}%" 
+                                     aria-valuenow="{{ insumo.stock_actual }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="30"></div>
+                            </div>
+                            <small class="text-muted">Nivel óptimo: 30 unidades</small>
+                        </td>
+                        <td class="text-end">${{ insumo.Precio_Unitario }}</td>
+                        <td class="text-end">
+                            <div class="btn-group">
+                                <a href="{{ url_for('inventario.registrar') }}?insumo={{ insumo.Id }}" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-plus-circle"></i> Agregar
+                                </a>
+                                <a href="{{ url_for('insumos.detalle', id=insumo.Id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Ver
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-emoji-smile text-success fs-1 mb-3"></i>
+                                <h5>¡Felicidades!</h5>
+                                <p class="text-muted mb-3">No hay insumos con stock crítico. Todo el inventario está en niveles óptimos.</p>
+                                <a href="{{ url_for('insumos.listar') }}" class="btn btn-primary">
+                                    <i class="bi bi-box-seam"></i> Ver todos los insumos
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if insumos %}
+<!-- Recomendaciones de compra -->
+<div class="row mt-4">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Recomendaciones de Compra</h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Basado en su historial de consumo y stock actual, le recomendamos realizar las siguientes compras para mantener un nivel óptimo de inventario:</p>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Insumo</th>
+                                <th>Stock Actual</th>
+                                <th>Recomendación</th>
+                                <th class="text-end">Costo Estimado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for insumo in insumos %}
+                            {% set cantidad_recomendada = 30 - insumo.stock_actual %}
+                            <tr>
+                                <td>{{ insumo.Nombre }}</td>
+                                <td>{{ insumo.stock_actual }}</td>
+                                <td>
+                                    <span class="badge bg-success">+ {{ cantidad_recomendada }} unidades</span>
+                                </td>
+                                <td class="text-end">
+                                    ${{ (cantidad_recomendada * insumo.Precio_Unitario)|float|round(2) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="table-light">
+                                <td colspan="3" class="text-end fw-bold">Total Estimado:</td>
+                                <td class="text-end fw-bold">
+                                    {% set total = 0 %}
+                                    {% for insumo in insumos %}
+                                        {% set cantidad_recomendada = 30 - insumo.stock_actual %}
+                                        {% set total = total + (cantidad_recomendada * insumo.Precio_Unitario|float) %}
+                                    {% endfor %}
+                                    ${{ total|round(2) }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Consejo:</strong> Para optimizar costos, considere comprar mayores cantidades de los insumos más utilizados para obtener descuentos por volumen.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Acciones Rápidas</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('inventario.registrar') }}" class="btn btn-warning btn-lg">
+                        <i class="bi bi-plus-lg me-2"></i> Registrar Compra
+                    </a>
+                    <a href="#" class="btn btn-outline-secondary">
+                        <i class="bi bi-file-earmark-text me-2"></i> Generar Orden de Compra
+                    </a>
+                    <a href="{{ url_for('reportes.insumos') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-bar-chart me-2"></i> Ver Reporte Detallado
+                    </a>
+                </div>
+                
+                <hr class="my-3">
+                
+                <h6 class="card-subtitle mb-2 text-muted">Contactos de Proveedores</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Distribuidora XYZ</strong>
+                            <div class="small text-muted">Productos de limpieza</div>
+                        </div>
+                        <a href="tel:+1234567890" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-telephone"></i>
+                        </a>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Suministros ABC</strong>
+                            <div class="small text-muted">Accesorios y herramientas</div>
+                        </div>
+                        <a href="tel:+1234567890" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-telephone"></i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Vehículos - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Reporte de Vehículos{% endblock %}
+
+{% block header_actions %}
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">
+        <i class="bi bi-printer"></i> Imprimir
+    </button>
+    <a href="{{ url_for('reportes.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Reportes
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Selector de período -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('reportes.vehiculos') }}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="periodo" class="form-label">Período a analizar</label>
+                <select class="form-select" id="periodo" name="periodo">
+                    <option value="30" {% if periodo == 30 %}selected{% endif %}>Último mes</option>
+                    <option value="90" {% if periodo == 90 %}selected{% endif %}>Últimos 3 meses</option>
+                    <option value="180" {% if periodo == 180 %}selected{% endif %}>Últimos 6 meses</option>
+                    <option value="365" {% if periodo == 365 %}selected{% endif %}>Último año</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted">
+                    Período analizado: <strong>{{ fecha_inicio.strftime('%d/%m/%Y') }}</strong> al <strong>{{ fecha_fin.strftime('%d/%m/%Y') }}</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Actualizar Análisis
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Estadísticas por tipo de vehículo -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Estadísticas por Tipo de Vehículo</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-lg-7">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Tipo de Vehículo</th>
+                                <th class="text-center">Servicios</th>
+                                <th class="text-end">Ingresos</th>
+                                <th class="text-end">Porcentaje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set total_ingresos = tipos_vehiculo|sum(attribute='total_ingresos')|default(0) %}
+                            {% for tipo in tipos_vehiculo %}
+                            <tr>
+                                <td>{{ tipo.Tipo_Vehículo }}</td>
+                                <td class="text-center">{{ tipo.total_servicios }}</td>
+                                <td class="text-end">${{ tipo.total_ingresos|round(2) }}</td>
+                                <td class="text-end">
+                                    {% if total_ingresos > 0 %}
+                                    {{ ((tipo.total_ingresos / total_ingresos) * 100)|round(1) }}%
+                                    {% else %}
+                                    0%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3">No hay datos para mostrar en el período seleccionado</td>
+                            </tr>
+                            {% endfor %}
+                            {% if tipos_vehiculo|length > 0 %}
+                            <tr class="table-light fw-bold">
+                                <td>TOTAL</td>
+                                <td class="text-center">{{ tipos_vehiculo|sum(attribute='total_servicios') }}</td>
+                                <td class="text-end">${{ total_ingresos|round(2) }}</td>
+                                <td class="text-end">100%</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div style="height: 300px;">
+                    <canvas id="tiposVehiculoChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vehículos frecuentes -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Clientes Frecuentes (3+ visitas)</h5>
+        <span class="badge bg-primary">{{ vehiculos_frecuentes|length }} vehículos</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Placa</th>
+                        <th>Vehículo</th>
+                        <th>Tipo</th>
+                        <th class="text-center">Visitas</th>
+                        <th class="text-end">Total Gastado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vehiculo in vehiculos_frecuentes %}
+                    <tr>
+                        <td><strong>{{ vehiculo.placa }}</strong></td>
+                        <td>{{ vehiculo.marca }} {{ vehiculo.modelo }}</td>
+                        <td>{{ vehiculo.tipo }}</td>
+                        <td class="text-center">
+                            <span class="badge bg-info">{{ vehiculo.visitas }}</span>
+                        </td>
+                        <td class="text-end">${{ vehiculo.total_gastado|round(2) }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('servicios.historial_vehiculo', placa=vehiculo.placa) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-clock-history"></i> Historial
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="bi bi-car-front fs-3 mb-3 d-block"></i>
+                                No se encontraron vehículos con 3 o más visitas en el período seleccionado.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Análisis de fidelización -->
+{% if vehiculos_frecuentes|length > 0 %}
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Distribución de Visitas</h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 250px;">
+                    <canvas id="visitasChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Análisis de Fidelización</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2">Estadísticas Generales</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 text-center h-100">
+                                <div class="text-muted small">Clientes Frecuentes</div>
+                                <div class="display-6">{{ vehiculos_frecuentes|length }}</div>
+                                <div class="small text-muted">3+ visitas en el período</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 text-center h-100">
+                                <div class="text-muted small">Promedio de Gasto</div>
+                                <div class="display-6">
+                                    ${{ (vehiculos_frecuentes|sum(attribute='total_gastado') / vehiculos_frecuentes|length)|round(2) }}
+                                </div>
+                                <div class="small text-muted">Por cliente frecuente</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-lightbulb me-2"></i>
+                    <strong>Recomendación:</strong> Considere implementar un programa de fidelización para los {{ vehiculos_frecuentes|length }} clientes frecuentes identificados, con descuentos progresivos según el número de visitas.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recomendaciones -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Recomendaciones y Observaciones</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Análisis por Tipo de Vehículo</h6>
+                <ul class="mb-4">
+                    {% if tipos_vehiculo|length > 0 %}
+                    {% set tipo_mas_comun = tipos_vehiculo|sort(attribute='total_servicios')|reverse|first %}
+                    <li class="mb-2">El tipo de vehículo más común es <strong>{{ tipo_mas_comun.Tipo_Vehículo }}</strong> con {{ tipo_mas_comun.total_servicios }} servicios.</li>
+                    {% set tipo_mas_rentable = tipos_vehiculo|sort(attribute='total_ingresos')|reverse|first %}
+                    <li class="mb-2">El tipo más rentable es <strong>{{ tipo_mas_rentable.Tipo_Vehículo }}</strong> generando ${{ tipo_mas_rentable.total_ingresos|round(2) }}.</li>
+                    {% endif %}
+                    <li class="mb-2">Considere promociones específicas para tipos de vehículos menos frecuentes para aumentar su participación.</li>
+                    <li class="mb-2">Ajuste la disposición del espacio de lavado según los tipos de vehículos más comunes.</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Estrategias de Fidelización</h6>
+                <ul class="mb-0">
+                    <li class="mb-2">Implemente un sistema de tarjetas de fidelidad con descuentos progresivos.</li>
+                    <li class="mb-2">Ofrezca promociones especiales para vehículos que no han regresado en más de 2 meses.</li>
+                    <li class="mb-2">Considere enviar recordatorios de servicio a clientes frecuentes.</li>
+                    <li class="mb-2">Estudie la posibilidad de ofrecer servicios complementarios específicos por tipo de vehículo.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if tipos_vehiculo|length > 0 %}
+        // Gráfico: Tipos de Vehículo
+        const ctxTipos = document.getElementById('tiposVehiculoChart').getContext('2d');
+        
+        // Preparar datos
+        const tiposLabels = [
+            {% for tipo in tipos_vehiculo %}
+            '{{ tipo.Tipo_Vehículo }}',
+            {% endfor %}
+        ];
+        
+        const tiposData = [
+            {% for tipo in tipos_vehiculo %}
+            {{ tipo.total_servicios }},
+            {% endfor %}
+        ];
+        
+        // Colores para el gráfico
+        const backgroundColors = [
+            'rgba(78, 115, 223, 0.8)',
+            'rgba(28, 200, 138, 0.8)',
+            'rgba(246, 194, 62, 0.8)',
+            'rgba(231, 74, 59, 0.8)',
+            'rgba(54, 185, 204, 0.8)'
+        ];
+        
+        new Chart(ctxTipos, {
+            type: 'doughnut',
+            data: {
+                labels: tiposLabels,
+                datasets: [{
+                    data: tiposData,
+                    backgroundColor: backgroundColors,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 15,
+                            padding: 10
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+        
+        {% if vehiculos_frecuentes|length > 0 %}
+        // Gráfico: Distribución de Visitas
+        const ctxVisitas = document.getElementById('visitasChart').getContext('2d');
+        
+        // Contar vehículos por número de visitas
+        const visitasCounts = {};
+        {% for vehiculo in vehiculos_frecuentes %}
+        const visitas = {{ vehiculo.visitas }};
+        if (!visitasCounts[visitas]) visitasCounts[visitas] = 0;
+        visitasCounts[visitas]++;
+        {% endfor %}
+        
+        // Convertir a arrays para el gráfico
+        const visitasLabels = [];
+        const visitasData = [];
+        
+        for (let i = 3; i <= Math.max(...Object.keys(visitasCounts).map(Number)); i++) {
+            visitasLabels.push(i + ' visitas');
+            visitasData.push(visitasCounts[i] || 0);
+        }
+        
+        new Chart(ctxVisitas, {
+            type: 'bar',
+            data: {
+                labels: visitasLabels,
+                datasets: [{
+                    label: 'Cantidad de Vehículos',
+                    data: visitasData,
+                    backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}

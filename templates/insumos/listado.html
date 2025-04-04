@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Insumos - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Insumos{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('insumos.registrar') }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-plus-lg"></i> Nuevo Insumo
+    </a>
+    <a href="{{ url_for('insumos.stock_bajo') }}" class="btn btn-sm btn-warning">
+        <i class="bi bi-exclamation-triangle"></i> Stock Bajo
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Filtros de búsqueda -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('insumos.listar') }}" class="row g-3">
+            <div class="col-md-5">
+                <label for="nombre" class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" value="{{ filtro_nombre }}" placeholder="Buscar por nombre...">
+            </div>
+            <div class="col-md-5">
+                <label for="tipo" class="form-label">Tipo de Insumo</label>
+                <select class="form-select" id="tipo" name="tipo">
+                    <option value="">Todos los tipos</option>
+                    {% for tipo in tipos_insumo %}
+                    <option value="{{ tipo.Id }}" {% if filtro_tipo == tipo.Id|string %}selected{% endif %}>{{ tipo.Nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de insumos -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Lista de Insumos</h6>
+        <span class="badge bg-primary">{{ insumos|length }} insumos</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th class="text-end">Precio Unitario</th>
+                        <th class="text-center">Stock Actual</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for insumo in insumos %}
+                    <tr>
+                        <td>{{ insumo.Id }}</td>
+                        <td>{{ insumo.Nombre }}</td>
+                        <td>{{ insumo.tipo_insumo.Nombre }}</td>
+                        <td class="text-end">${{ insumo.Precio_Unitario }}</td>
+                        <td class="text-center">
+                            {% if insumo.stock_actual > 10 %}
+                            <span class="badge bg-success">{{ insumo.stock_actual }}</span>
+                            {% elif insumo.stock_actual > 0 %}
+                            <span class="badge bg-warning text-dark">{{ insumo.stock_actual }}</span>
+                            {% else %}
+                            <span class="badge bg-danger">{{ insumo.stock_actual }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if insumo.Estado == 'Activo' %}
+                            <span class="badge bg-success">Activo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('insumos.detalle', id=insumo.Id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('insumos.editar', id=insumo.Id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{{ url_for('inventario.registrar') }}?insumo={{ insumo.Id }}" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-plus-circle"></i> Stock
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-box-seam text-muted mb-3" style="font-size: 2.5rem;"></i>
+                                <h5 class="text-muted">No se encontraron insumos</h5>
+                                <p class="text-muted mb-3">No hay insumos registrados con los filtros seleccionados.</p>
+                                <a href="{{ url_for('insumos.registrar') }}" class="btn btn-primary">
+                                    <i class="bi bi-plus-lg"></i> Registrar Nuevo Insumo
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen de stock -->
+{% if insumos %}
+<div class="row mt-4">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Resumen de Inventario</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center">
+                            <div class="text-muted small">Total Insumos</div>
+                            <div class="h4 mb-0">{{ insumos|length }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center">
+                            <div class="text-muted small">Stock Bajo</div>
+                            <div class="h4 mb-0 text-warning">{{ insumos|selectattr('stock_actual', 'lt', 10)|list|length }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center">
+                            <div class="text-muted small">Agotados</div>
+                            <div class="h4 mb-0 text-danger">{{ insumos|selectattr('stock_actual', 'eq', 0)|list|length }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <h6 class="border-bottom pb-2">Tipos de Insumo</h6>
+                    <div class="row">
+                        {% for tipo in tipos_insumo %}
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>{{ tipo.Nombre }}</div>
+                                <span class="badge bg-primary rounded-pill">
+                                    {{ insumos|selectattr('Id_TipoInsumo', 'eq', tipo.Id)|list|length }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Acciones Rápidas</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <a href="{{ url_for('insumos.registrar') }}" class="btn btn-primary w-100 py-2">
+                            <i class="bi bi-plus-lg me-2"></i> Nuevo Insumo
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('inventario.registrar') }}" class="btn btn-success w-100 py-2">
+                            <i class="bi bi-plus-circle me-2"></i> Agregar Stock
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('insumos.stock_bajo') }}" class="btn btn-warning w-100 py-2">
+                            <i class="bi bi-exclamation-triangle me-2"></i> Ver Stock Bajo
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('insumos.listar_tipos') }}" class="btn btn-info w-100 py-2">
+                            <i class="bi bi-tags me-2"></i> Gestionar Tipos
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('reportes.insumos') }}" class="btn btn-outline-secondary w-100 py-2">
+                        <i class="bi bi-bar-chart me-2"></i> Ver Reporte de Insumos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

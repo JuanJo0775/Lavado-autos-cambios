@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Proveedores - LavadoAutos</title>
+    <!-- CSS Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Iconos Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .hero-section {
+            background-color: #0d6efd;
+            color: white;
+            padding: 60px 0;
+            margin-bottom: 40px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 20px 0;
+            margin-top: 60px;
+        }
+        .nav-item .btn {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('cotizaciones.publico_index') }}">
+                <i class="bi bi-droplet-half me-2"></i>
+                <strong>LavadoAutos</strong>
+                <span class="ms-2 badge bg-light text-primary">Portal de Proveedores</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('cotizaciones.publico_index') }}">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light" href="{{ url_for('cotizaciones.publico_registro') }}">Registrarse</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-light text-primary" href="{{ url_for('cotizaciones.publico_login') }}">Acceder</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1><i class="bi bi-currency-dollar"></i> Portal de Cotizaciones</h1>
+            <p class="lead mb-4">Registre su empresa como proveedor y envíe cotizaciones para nuestros productos</p>
+            <div>
+                <a href="{{ url_for('cotizaciones.publico_registro') }}" class="btn btn-light btn-lg me-2">
+                    <i class="bi bi-person-plus me-2"></i>Registrarse
+                </a>
+                <a href="{{ url_for('cotizaciones.publico_login') }}" class="btn btn-outline-light btn-lg">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Acceder
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contenido principal -->
+    <div class="container mb-5">
+        <!-- Cómo funciona -->
+        <section class="mb-5">
+            <h2 class="text-center mb-4">¿Cómo funciona?</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <div class="text-primary mb-3">
+                                <i class="bi bi-person-plus" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">1. Regístrese</h5>
+                            <p class="card-text">Complete el formulario de registro con los datos de su empresa para poder acceder al sistema.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <div class="text-primary mb-3">
+                                <i class="bi bi-clipboard-check" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">2. Revise las Solicitudes</h5>
+                            <p class="card-text">Explore las solicitudes de cotización activas que tenemos para los diferentes insumos que necesitamos.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <div class="text-primary mb-3">
+                                <i class="bi bi-send" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">3. Envíe su Cotización</h5>
+                            <p class="card-text">Envíe el precio al que puede ofrecernos los productos y espere nuestra respuesta.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Solicitudes Activas -->
+        <section class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Solicitudes Activas</h2>
+                <a href="{{ url_for('cotizaciones.publico_login') }}" class="btn btn-primary">
+                    <i class="bi bi-pencil-square me-2"></i>Cotizar Ahora
+                </a>
+            </div>
+
+            <div class="row">
+                {% for solicitud in solicitudes %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">{{ solicitud.insumo.Nombre }}</h5>
+                                <span class="badge bg-primary">{{ solicitud.Cantidad_Requerida }} uds.</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {% if solicitud.Descripcion %}
+                            <p class="card-text">{{ solicitud.Descripcion }}</p>
+                            {% else %}
+                            <p class="card-text text-muted">Sin descripción adicional</p>
+                            {% endif %}
+
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <small class="text-muted">Publicado: {{ solicitud.Fecha_Publicacion.strftime('%d/%m/%Y') }}</small>
+                                {% if solicitud.Fecha_Limite %}
+                                <span class="badge bg-danger">Límite: {{ solicitud.Fecha_Limite.strftime('%d/%m/%Y') }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-0">
+                            <a href="{{ url_for('cotizaciones.publico_login') }}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-currency-dollar me-2"></i>Cotizar Este Producto
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No hay solicitudes de cotización activas en este momento. Vuelva a revisar más tarde.
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Beneficios -->
+        <section>
+            <h2 class="text-center mb-4">Beneficios de ser Proveedor</h2>
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-graph-up text-success mb-3" style="font-size: 2rem;"></i>
+                            <h5 class="card-title">Nuevas Oportunidades</h5>
+                            <p class="card-text">Acceda a nuevas oportunidades de negocio con nuestra empresa.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-clock-history text-primary mb-3" style="font-size: 2rem;"></i>
+                            <h5 class="card-title">Proceso Simplificado</h5>
+                            <p class="card-text">Envíe sus cotizaciones de manera rápida y sencilla.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-shield-check text-warning mb-3" style="font-size: 2rem;"></i>
+                            <h5 class="card-title">Transparencia</h5>
+                            <p class="card-text">Procesos claros y transparentes para todos los proveedores.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-building text-info mb-3" style="font-size: 2rem;"></i>
+                            <h5 class="card-title">Relación Duradera</h5>
+                            <p class="card-text">Construya una relación comercial sólida y a largo plazo.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>LavadoAutos - Portal de Proveedores</h5>
+                    <p>Sistema de cotización de productos para proveedores.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Enlaces</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('cotizaciones.publico_index') }}" class="text-white">Inicio</a></li>
+                        <li><a href="{{ url_for('cotizaciones.publico_registro') }}" class="text-white">Registrarse</a></li>
+                        <li><a href="{{ url_for('cotizaciones.publico_login') }}" class="text-white">Acceder</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Contacto</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-envelope me-2"></i> proveedores@lavadoautos.com</li>
+                        <li><i class="bi bi-telephone me-2"></i> +123 456 7890</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="bg-white">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2025 LavadoAutos. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

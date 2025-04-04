@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Inventario - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Inventario{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('inventario.registrar') }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-plus-lg"></i> Agregar Stock
+    </a>
+    <a href="{{ url_for('inventario.reporte') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-bar-chart"></i> Reporte
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Filtros de búsqueda -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('inventario.listar') }}" class="row g-3">
+            <div class="col-md-10">
+                <label for="insumo" class="form-label">Insumo</label>
+                <input type="text" class="form-control" id="insumo" name="insumo" value="{{ filtro_insumo }}" placeholder="Buscar por nombre del insumo...">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resumen de inventario -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-left-primary h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Total Items en Inventario</div>
+                        <div class="h3 mb-0 font-weight-bold">{{ inventario|length }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-box fs-1 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm border-left-success h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Valor Total del Inventario</div>
+                        <div class="h3 mb-0 font-weight-bold">${{ valor_total|round(2) }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-cash-stack fs-1 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm border-left-warning h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Items con Stock Crítico</div>
+                        <div class="h3 mb-0 font-weight-bold">{{ inventario|selectattr('Stock', 'lt', 10)|list|length }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de inventario -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Existencias en Inventario</h6>
+        <div>
+            <a href="{{ url_for('inventario.registrar') }}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg"></i> Agregar Stock
+            </a>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Insumo</th>
+                        <th>Categoría</th>
+                        <th class="text-center">Stock</th>
+                        <th class="text-end">Precio Unitario</th>
+                        <th class="text-end">Valor Total</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in inventario %}
+                    <tr>
+                        <td>{{ item.Id }}</td>
+                        <td>{{ item.insumo.Nombre }}</td>
+                        <td>{{ item.insumo.tipo_insumo.Nombre }}</td>
+                        <td class="text-center">
+                            {% if item.Stock > 10 %}
+                            <span class="badge bg-success">{{ item.Stock }}</span>
+                            {% elif item.Stock > 0 %}
+                            <span class="badge bg-warning text-dark">{{ item.Stock }}</span>
+                            {% else %}
+                            <span class="badge bg-danger">{{ item.Stock }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">${{ item.insumo.Precio_Unitario }}</td>
+                        <td class="text-end">${{ item.valor_total|round(2) }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('inventario.ajustar', id=item.Id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i> Ajustar
+                            </a>
+                            <a href="{{ url_for('insumos.detalle', id=item.Id_insumo) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i> Ver Insumo
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-box2 text-muted mb-3" style="font-size: 2.5rem;"></i>
+                                <h5 class="text-muted">No se encontraron items en el inventario</h5>
+                                <p class="text-muted mb-3">No hay existencias registradas con los filtros seleccionados.</p>
+                                <a href="{{ url_for('inventario.registrar') }}" class="btn btn-primary">
+                                    <i class="bi bi-plus-lg"></i> Agregar Stock
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if inventario %}
+    <div class="card-footer text-end">
+        <strong>Valor Total del Inventario: ${{ valor_total|round(2) }}</strong>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Estado del inventario -->
+{% if inventario %}
+<div class="row mt-4">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Estado del Inventario</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="border-bottom pb-2">Distribución por Categoría</h6>
+                    <ul class="list-group list-group-flush">
+                        {% set categorias = {} %}
+                        {% for item in inventario %}
+                            {% set categoria = item.insumo.tipo_insumo.Nombre %}
+                            {% if categoria in categorias %}
+                                {% set _ = categorias.update({categoria: categorias[categoria] + item.valor_total}) %}
+                            {% else %}
+                                {% set _ = categorias.update({categoria: item.valor_total}) %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% for categoria, valor in categorias.items() %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ categoria }}
+                            <div>
+                                <span class="badge bg-primary rounded-pill me-2">
+                                    {{ inventario|selectattr('insumo.tipo_insumo.Nombre', 'eq', categoria)|list|length }} items
+                                </span>
+                                <span class="text-success">${{ valor|round(2) }}</span>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <div>
+                    <h6 class="border-bottom pb-2">Estado de Stock</h6>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Stock suficiente (>10)</span>
+                            <span>{{ inventario|selectattr('Stock', 'gt', 10)|list|length }} items</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ (inventario|selectattr('Stock', 'gt', 10)|list|length / inventario|length) * 100 }}%" 
+                                 aria-valuenow="{{ inventario|selectattr('Stock', 'gt', 10)|list|length }}" 
+                                 aria-valuemin="0" aria-valuemax="{{ inventario|length }}"></div>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Stock crítico (1-10)</span>
+                            <span>{{ inventario|selectattr('Stock', 'le', 10)|selectattr('Stock', 'gt', 0)|list|length }} items</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-warning" role="progressbar" 
+                                 style="width: {{ (inventario|selectattr('Stock', 'le', 10)|selectattr('Stock', 'gt', 0)|list|length / inventario|length) * 100 }}%" 
+                                 aria-valuenow="{{ inventario|selectattr('Stock', 'le', 10)|selectattr('Stock', 'gt', 0)|list|length }}" 
+                                 aria-valuemin="0" aria-valuemax="{{ inventario|length }}"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Sin stock (0)</span>
+                            <span>{{ inventario|selectattr('Stock', 'eq', 0)|list|length }} items</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-danger" role="progressbar" 
+                                 style="width: {{ (inventario|selectattr('Stock', 'eq', 0)|list|length / inventario|length) * 100 }}%" 
+                                 aria-valuenow="{{ inventario|selectattr('Stock', 'eq', 0)|list|length }}" 
+                                 aria-valuemin="0" aria-valuemax="{{ inventario|length }}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Acciones de Inventario</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <a href="{{ url_for('inventario.registrar') }}" class="btn btn-primary w-100 py-2">
+                            <i class="bi bi-plus-lg me-2"></i> Agregar Stock
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('insumos.stock_bajo') }}" class="btn btn-warning w-100 py-2">
+                            <i class="bi bi-exclamation-triangle me-2"></i> Ver Stock Bajo
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('insumos.registrar') }}" class="btn btn-success w-100 py-2">
+                            <i class="bi bi-box-seam me-2"></i> Nuevo Insumo
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('inventario.reporte') }}" class="btn btn-info w-100 py-2">
+                            <i class="bi bi-file-earmark-text me-2"></i> Generar Reporte
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-4">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <strong>Nota:</strong> Utilice la opción «Ajustar» para corregir discrepancias en el inventario físico.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

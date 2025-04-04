@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Vehículo: {{ vehiculo.Placa }} - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Editar Vehículo{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('vehiculos.detalle', id=vehiculo.Id) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver al Detalle
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pencil-square me-2"></i>
+                    Editar Vehículo: {{ vehiculo.Placa }}
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('vehiculos.editar', id=vehiculo.Id) }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="placa" class="form-label">Placa <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="placa" value="{{ vehiculo.Placa }}" disabled>
+                            <div class="form-text">La placa no se puede modificar</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="tipo_vehiculo" class="form-label">Tipo de Vehículo <span class="text-danger">*</span></label>
+                            <select class="form-select" id="tipo_vehiculo" name="tipo_vehiculo" required>
+                                <option value="">Seleccione un tipo</option>
+                                <option value="Automóvil" {% if vehiculo.Tipo_Vehículo == 'Automóvil' %}selected{% endif %}>🚗 Automóvil</option>
+                                <option value="Camioneta" {% if vehiculo.Tipo_Vehículo == 'Camioneta' %}selected{% endif %}>🚙 Camioneta</option>
+                                <option value="Camión" {% if vehiculo.Tipo_Vehículo == 'Camión' %}selected{% endif %}>🚛 Camión</option>
+                                <option value="Motocicleta" {% if vehiculo.Tipo_Vehículo == 'Motocicleta' %}selected{% endif %}>🏍️ Motocicleta</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="marca" class="form-label">Marca <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="marca" name="marca" required value="{{ vehiculo.Marca }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="modelo" class="form-label">Modelo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="modelo" name="modelo" required value="{{ vehiculo.Modelo }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="color" class="form-label">Color <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="color" name="color" required value="{{ vehiculo.Color }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="estado" class="form-label">Estado <span class="text-danger">*</span></label>
+                            <select class="form-select" id="estado" name="estado" required>
+                                <option value="Activo" {% if vehiculo.Estado == 'Activo' %}selected{% endif %}>✅ Activo</option>
+                                <option value="Inactivo" {% if vehiculo.Estado == 'Inactivo' %}selected{% endif %}>❌ Inactivo</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="3">{{ vehiculo.Descripcion }}</textarea>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Información:</strong> Los cambios realizados no afectarán a los servicios pasados registrados con este vehículo.
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary py-2">
+                                <i class="bi bi-save me-2"></i> Guardar Cambios
+                            </button>
+                            <a href="{{ url_for('vehiculos.detalle', id=vehiculo.Id) }}" class="btn btn-outline-secondary">
+                                Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información adicional -->
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-wrench me-2"></i>
+                    Acciones Adicionales
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <a href="{{ url_for('servicios.historial_vehiculo', placa=vehiculo.Placa) }}" class="btn btn-outline-primary">
+                                <i class="bi bi-clock-history me-2"></i> Ver Historial de Servicios
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <form method="POST" action="{{ url_for('vehiculos.cambiar_estado', id=vehiculo.Id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-outline-secondary w-100" onclick="return confirm('¿Está seguro de cambiar el estado de este vehículo?')">
+                                    {% if vehiculo.Estado == 'Activo' %}
+                                    <i class="bi bi-toggle-off me-2"></i> Marcar como Inactivo
+                                    {% else %}
+                                    <i class="bi bi-toggle-on me-2"></i> Marcar como Activo
+                                    {% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Convertir placa a mayúsculas automáticamente
+    document.getElementById('placa').addEventListener('input', function () {
+        this.value = this.value.toUpperCase();
+    });
+</script>
+{% endblock %}

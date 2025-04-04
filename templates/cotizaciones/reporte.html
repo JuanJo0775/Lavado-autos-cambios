@@ -1,0 +1,349 @@
+```html
+{% extends "base.html" %}
+
+{% block title %}Reporte de Cotizaciones - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Reporte de Cotizaciones{% endblock %}
+
+{% block header_actions %}
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">
+        <i class="bi bi-printer"></i> Imprimir
+    </button>
+    <a href="{{ url_for('cotizaciones.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Cotizaciones
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Selector de período -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('cotizaciones.reporte') }}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="periodo" class="form-label">Período a analizar</label>
+                <select class="form-select" id="periodo" name="periodo">
+                    <option value="30" {% if periodo == 30 %}selected{% endif %}>Último mes</option>
+                    <option value="90" {% if periodo == 90 %}selected{% endif %}>Últimos 3 meses</option>
+                    <option value="180" {% if periodo == 180 %}selected{% endif %}>Últimos 6 meses</option>
+                    <option value="365" {% if periodo == 365 %}selected{% endif %}>Último año</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted">
+                    Período analizado: <strong>{{ fecha_inicio.strftime('%d/%m/%Y') }}</strong> al <strong>{{ fecha_fin.strftime('%d/%m/%Y') }}</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Actualizar Análisis
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tarjetas de resumen -->
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Cotizaciones</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">{{ total_cotizaciones }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-clipboard-data fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Proveedores Activos</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">{{ proveedores_activos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-people fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Insumos Cotizados</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">{{ insumos_cotizados }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-box-seam fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Cotizaciones Aprobadas</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">{{ cotizaciones_aprobadas }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos analíticos -->
+<div class="row">
+    <!-- Cotizaciones por estado -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Cotizaciones por Estado</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-pie pb-2">
+                    <canvas id="estadoCotizacionesChart"></canvas>
+                </div>
+                <div class="mt-4 text-center small">
+                    <span class="me-2">
+                        <i class="bi bi-circle-fill text-warning"></i> Pendientes
+                    </span>
+                    <span class="me-2">
+                        <i class="bi bi-circle-fill text-success"></i> Aprobadas
+                    </span>
+                    <span class="me-2">
+                        <i class="bi bi-circle-fill text-danger"></i> Rechazadas
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cotizaciones por proveedor (Top 5) -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Cotizaciones por Proveedor (Top 5)</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-bar">
+                    <canvas id="proveedoresChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Análisis de precios -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Análisis de Precios por Insumo</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Insumo</th>
+                        <th class="text-center">Cotizaciones</th>
+                        <th class="text-end">Precio Más Bajo</th>
+                        <th class="text-end">Precio Más Alto</th>
+                        <th class="text-end">Promedio</th>
+                        <th class="text-center">Variación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if analisis_precios %}
+                    {% for insumo_id, data in analisis_precios.items() %}
+                    <tr>
+                        <td>{{ data.nombre }}</td>
+                        <td class="text-center">{{ data.cotizaciones }}</td>
+                        <td class="text-end">${{ data.min_precio|float }}</td>
+                        <td class="text-end">${{ data.max_precio|float }}</td>
+                        <td class="text-end">${{ data.promedio|float }}</td>
+                        <td class="text-center">
+                            {% set min_precio = data.min_precio|float %}
+                            {% set max_precio = data.max_precio|float %}
+                            {% set promedio = data.promedio|float %}
+                            {% set variacion = ((max_precio - min_precio) / promedio * 100)|round(1) if promedio > 0 else 0 %}
+                            {% if variacion > 25 %}
+                            <span class="badge bg-danger">{{ variacion }}%</span>
+                            {% elif variacion > 10 %}
+                            <span class="badge bg-warning text-dark">{{ variacion }}%</span>
+                            {% else %}
+                            <span class="badge bg-success">{{ variacion }}%</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-3">No hay datos suficientes para el análisis de precios en el período seleccionado.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Recomendaciones -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Recomendaciones y Oportunidades</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Análisis de Tendencias</h6>
+                <ul class="mb-4">
+                    {% if total_cotizaciones > 0 %}
+                    <li class="mb-2">Se han recibido <strong>{{ total_cotizaciones }}</strong> cotizaciones en el período analizado.</li>
+                    <li class="mb-2">El <strong>{{ (cotizaciones_aprobadas / total_cotizaciones * 100)|round(1) if total_cotizaciones > 0 else 0 }}%</strong> de las cotizaciones han sido aprobadas.</li>
+                    {% if proveedores_top %}
+                    <li class="mb-2">El proveedor más activo es <strong>{{ proveedores_top[0].nombre }}</strong> con {{ proveedores_top[0].cotizaciones }} cotizaciones.</li>
+                    {% endif %}
+                    {% else %}
+                    <li class="mb-2">No hay suficientes datos para el análisis de tendencias en el período seleccionado.</li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Recomendaciones</h6>
+                <ul class="mb-0">
+                    {% if analisis_precios %}
+                    {% for insumo_id, data in analisis_precios.items() %}
+                    {% set min_precio = data.min_precio|float %}
+                    {% set max_precio = data.max_precio|float %}
+                    {% set promedio = data.promedio|float %}
+                    {% if max_precio > min_precio * 1.3 %}
+                    <li class="mb-2">Buscar más proveedores para <strong>{{ data.nombre }}</strong>, ya que muestra una alta variación de precios ({{ ((max_precio - min_precio) / promedio * 100)|round(1) }}%).</li>
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                    <li class="mb-2">Considerar establecer contratos a largo plazo con proveedores que ofrecen precios más bajos y estables.</li>
+                    <li class="mb-2">Realizar solicitudes de cotización más frecuentes para insumos de alta demanda.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico: Estado de Cotizaciones
+    const ctxEstado = document.getElementById('estadoCotizacionesChart');
+    
+    if (ctxEstado) {
+        const pendientes = {{ cotizaciones_pendientes|default(0) }};
+        const aprobadas = {{ cotizaciones_aprobadas|default(0) }};
+        const rechazadas = {{ cotizaciones_rechazadas|default(0) }};
+        
+        new Chart(ctxEstado, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pendientes', 'Aprobadas', 'Rechazadas'],
+                datasets: [{
+                    data: [pendientes, aprobadas, rechazadas],
+                    backgroundColor: ['#f6c23e', '#1cc88a', '#e74a3b'],
+                    hoverBackgroundColor: ['#e5b53a', '#17a673', '#d93f2e'],
+                    hoverBorderColor: "rgba(234, 236, 244, 1)",
+                }],
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                cutout: '70%',
+            },
+        });
+    }
+    
+    // Gráfico: Cotizaciones por Proveedor
+    const ctxProveedores = document.getElementById('proveedoresChart');
+    
+    if (ctxProveedores) {
+        // Datos para el gráfico (asumimos que tienes una variable proveedores_top con los datos)
+        const proveedoresLabels = [
+            {% if proveedores_top %}
+            {% for proveedor in proveedores_top %}
+            '{{ proveedor.nombre }}',
+            {% endfor %}
+            {% endif %}
+        ];
+        
+        const proveedoresData = [
+            {% if proveedores_top %}
+            {% for proveedor in proveedores_top %}
+            {{ proveedor.cotizaciones }},
+            {% endfor %}
+            {% endif %}
+        ];
+        
+        new Chart(ctxProveedores, {
+            type: 'bar',
+            data: {
+                labels: proveedoresLabels,
+                datasets: [{
+                    label: 'Cotizaciones',
+                    data: proveedoresData,
+                    backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                    borderColor: 'rgba(78, 115, 223, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        left: 10,
+                        right: 25,
+                        top: 25,
+                        bottom: 0
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+```

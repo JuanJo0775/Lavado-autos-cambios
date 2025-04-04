@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Ajustar Inventario - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Ajustar Inventario{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('inventario.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver al Inventario
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pencil-square me-2"></i>
+                    Ajuste de Stock: {{ item.insumo.Nombre }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <!-- Información del insumo -->
+                    <div class="col-md-8">
+                        <h6 class="border-bottom pb-2">Información del Insumo</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="text-muted small">Insumo:</div>
+                                <div class="fw-bold fs-5">{{ item.insumo.Nombre }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-muted small">Categoría:</div>
+                                <div>{{ item.insumo.tipo_insumo.Nombre }}</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="text-muted small">Precio Unitario:</div>
+                                <div>${{ item.insumo.Precio_Unitario }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-muted small">ID:</div>
+                                <div>{{ item.insumo.Id }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stock actual -->
+                    <div class="col-md-4 text-center">
+                        <div class="border rounded-3 p-3">
+                            <div class="text-muted small">Stock Actual</div>
+                            <div class="display-4 fw-bold" id="stockActualDisplay">{{ item.Stock }}</div>
+                            <div>
+                                {% if item.Stock > 10 %}
+                                <span class="badge bg-success">Normal</span>
+                                {% elif item.Stock > 0 %}
+                                <span class="badge bg-warning text-dark">Crítico</span>
+                                {% else %}
+                                <span class="badge bg-danger">Agotado</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <form method="POST" action="{{ url_for('inventario.ajustar', id=item.Id) }}" id="ajusteForm">
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2">Ajuste de Inventario</h6>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Importante:</strong> El ajuste de inventario permite corregir discrepancias entre el inventario físico y el sistema. Use esta funcionalidad solo cuando sea necesario.
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="stock" class="form-label">Nueva Cantidad</label>
+                                <div class="input-group">
+                                    <button type="button" class="btn btn-outline-secondary" id="decrementBtn">
+                                        <i class="bi bi-dash"></i>
+                                    </button>
+                                    <input type="number" class="form-control text-center" id="stock" name="stock" value="{{ item.Stock }}" min="0" required>
+                                    <button type="button" class="btn btn-outline-secondary" id="incrementBtn">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="motivo" class="form-label">Motivo del Ajuste</label>
+                                <select class="form-select" id="motivo" name="motivo" required>
+                                    <option value="">Seleccione un motivo</option>
+                                    <option value="inventario_fisico">Conteo físico de inventario</option>
+                                    <option value="daño_perdida">Daño o pérdida</option>
+                                    <option value="devolucion">Devolución</option>
+                                    <option value="error_sistema">Error en el sistema</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="motivoOtroContainer" style="display: none;">
+                            <label for="motivoOtro" class="form-label">Especifique el motivo</label>
+                            <textarea class="form-control" id="motivoOtro" name="motivoOtro" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="observaciones" class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="observaciones" name="observaciones" rows="3" placeholder="Agregue detalles adicionales sobre el ajuste..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-4" id="ajusteInfo">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-info-circle fs-4 me-3"></i>
+                            <div>
+                                <strong>Resumen del Ajuste:</strong>
+                                <div id="resumenAjuste">No hay cambios en el stock</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary" id="btnGuardar">
+                            <i class="bi bi-check-lg me-2"></i> Guardar Ajuste
+                        </button>
+                        <a href="{{ url_for('inventario.listar') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-2"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stockInput = document.getElementById('stock');
+    const incrementBtn = document.getElementById('incrementBtn');
+    const decrementBtn = document.getElementById('decrementBtn');
+    const stockActualDisplay = document.getElementById('stockActualDisplay');
+    const resumenAjuste = document.getElementById('resumenAjuste');
+    const ajusteInfo = document.getElementById('ajusteInfo');
+    const motivoSelect = document.getElementById('motivo');
+    const motivoOtroContainer = document.getElementById('motivoOtroContainer');
+    const motivoOtro = document.getElementById('motivoOtro');
+    const stockActual = {{ item.Stock }};
+    
+    // Función para actualizar el resumen del ajuste
+    function actualizarResumen() {
+        const nuevoStock = parseInt(stockInput.value) || 0;
+        const diferencia = nuevoStock - stockActual;
+        
+        if (diferencia === 0) {
+            resumenAjuste.textContent = "No hay cambios en el stock";
+            ajusteInfo.classList.remove('alert-success', 'alert-danger');
+            ajusteInfo.classList.add('alert-info');
+        } else if (diferencia > 0) {
+            resumenAjuste.textContent = `Aumentar el stock en ${diferencia} unidades (${stockActual} → ${nuevoStock})`;
+            ajusteInfo.classList.remove('alert-info', 'alert-danger');
+            ajusteInfo.classList.add('alert-success');
+        } else {
+            resumenAjuste.textContent = `Disminuir el stock en ${Math.abs(diferencia)} unidades (${stockActual} → ${nuevoStock})`;
+            ajusteInfo.classList.remove('alert-info', 'alert-success');
+            ajusteInfo.classList.add('alert-danger');
+        }
+    }
+    
+    // Manejadores para los botones de incremento/decremento
+    incrementBtn.addEventListener('click', function() {
+        stockInput.value = (parseInt(stockInput.value) || 0) + 1;
+        actualizarResumen();
+    });
+    
+    decrementBtn.addEventListener('click', function() {
+        const valor = (parseInt(stockInput.value) || 0) - 1;
+        stockInput.value = valor < 0 ? 0 : valor;
+        actualizarResumen();
+    });
+    
+    // Actualizar cuando se cambia el valor directamente
+    stockInput.addEventListener('input', actualizarResumen);
+    
+    // Mostrar/ocultar campo para "otro" motivo
+    motivoSelect.addEventListener('change', function() {
+        if (this.value === 'otro') {
+            motivoOtroContainer.style.display = 'block';
+            motivoOtro.required = true;
+        } else {
+            motivoOtroContainer.style.display = 'none';
+            motivoOtro.required = false;
+        }
+    });
+    
+    // Validación del formulario
+    document.getElementById('ajusteForm').addEventListener('submit', function(e) {
+        const stockValue = parseInt(stockInput.value) || 0;
+        const motivo = motivoSelect.value;
+        
+        if (stockValue === stockActual && motivo !== 'inventario_fisico') {
+            e.preventDefault();
+            alert('No ha realizado ningún cambio en el stock. Si desea confirmar que el stock es correcto, seleccione "Conteo físico de inventario" como motivo.');
+            return false;
+        }
+        
+        if (motivo === 'otro' && !motivoOtro.value.trim()) {
+            e.preventDefault();
+            alert('Por favor, especifique el motivo del ajuste.');
+            motivoOtro.focus();
+            return false;
+        }
+        
+        if (!motivo) {
+            e.preventDefault();
+            alert('Por favor, seleccione un motivo para el ajuste.');
+            motivoSelect.focus();
+            return false;
+        }
+        
+        return true;
+    });
+    
+    // Inicializar el resumen
+    actualizarResumen();
+});
+</script>
+{% endblock %}

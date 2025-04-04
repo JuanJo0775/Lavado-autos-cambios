@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Vehículo - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Registrar Nuevo Vehículo{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('vehiculos.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a la lista
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-car-front-fill text-primary" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">Información del Vehículo</h4>
+                    <p class="text-muted">Ingrese los datos del vehículo a registrar en el sistema</p>
+                </div>
+
+                <form method="POST" action="{{ url_for('vehiculos.registrar') }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="placa" class="form-label">Placa <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="placa" name="placa" value="{{ placa_inicial }}" required 
+                                   placeholder="Ej: ABC123" autocomplete="off">
+                            <div class="form-text">Ingrese la placa sin espacios</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="tipo_vehiculo" class="form-label">Tipo de Vehículo <span class="text-danger">*</span></label>
+                            <select class="form-select" id="tipo_vehiculo" name="tipo_vehiculo" required>
+                                <option value="">Seleccione un tipo</option>
+                                <option value="Automóvil">🚗 Automóvil</option>
+                                <option value="Camioneta">🚙 Camioneta</option>
+                                <option value="Camión">🚛 Camión</option>
+                                <option value="Motocicleta">🏍️ Motocicleta</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="marca" class="form-label">Marca <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="marca" name="marca" required 
+                                   placeholder="Ej: Toyota, Ford, Honda...">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="modelo" class="form-label">Modelo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="modelo" name="modelo" required 
+                                   placeholder="Ej: Corolla, Ranger, Civic...">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="color" class="form-label">Color <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="color" name="color" required 
+                                   placeholder="Ej: Rojo, Azul, Negro...">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="estado" class="form-label">Estado <span class="text-danger">*</span></label>
+                            <select class="form-select" id="estado" name="estado" required>
+                                <option value="Activo" selected>✅ Activo</option>
+                                <option value="Inactivo">❌ Inactivo</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="3" 
+                                      placeholder="Información adicional sobre el vehículo..."></textarea>
+                        </div>
+                        
+                        <div class="col-12 d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary py-2">
+                                <i class="bi bi-save me-2"></i> Registrar Vehículo
+                            </button>
+                            <a href="{{ url_for('vehiculos.listar') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Convertir placa a mayúsculas automáticamente
+    document.getElementById('placa').addEventListener('input', function () {
+        this.value = this.value.toUpperCase();
+    });
+</script>
+{% endblock %}

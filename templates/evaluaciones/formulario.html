@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluar Servicio - Sistema de Lavado de Autos</title>
+    <!-- CSS Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Iconos Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 20px;
+            padding-bottom: 40px;
+        }
+        .rating-container {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: center;
+            padding: 15px 0;
+        }
+        .rating-container input {
+            display: none;
+        }
+        .rating-container label {
+            cursor: pointer;
+            font-size: 30px;
+            color: #ccc;
+            padding: 5px;
+        }
+        .rating-container label:hover,
+        .rating-container label:hover ~ label,
+        .rating-container input:checked ~ label {
+            color: #ffca08;
+        }
+        .logo {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background-color: #0d6efd;
+            color: white;
+            text-align: center;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+        }
+        .info-servicio {
+            background-color: rgba(13, 110, 253, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="logo">
+                    <i class="bi bi-droplet-half text-primary" style="font-size: 3rem;"></i>
+                    <h2 class="mt-2">LavadoAutos</h2>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">¡Queremos tu opinión!</h4>
+                        <p class="mb-0">Tu retroalimentación nos ayuda a mejorar</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="info-servicio mb-4">
+                            <h5 class="border-bottom pb-2">Información del Servicio</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <div class="text-muted">Fecha:</div>
+                                    <div>{{ servicio.Fecha.strftime('%d/%m/%Y') }}</div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="text-muted">Vehículo:</div>
+                                    <div>{{ servicio.Placa }}</div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <div class="text-muted">Tipo de Lavado:</div>
+                                    <div>{{ servicio.tipo_lavado.Nombre if servicio.tipo_lavado else "N/A" }}</div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="text-muted">Precio:</div>
+                                    <div>${{ servicio.Precio }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form method="POST" action="{{ url_for('evaluaciones.guardar') }}">
+                            <input type="hidden" name="token" value="{{ token }}">
+
+                            <div class="mb-4">
+                                <h5 class="text-center mb-3">Califica tu experiencia</h5>
+
+                                <!-- Tiempo de Espera -->
+                                <div class="mb-4">
+                                    <label class="form-label text-center w-100 fs-5">Tiempo de Espera</label>
+                                    <div class="rating-container" id="tiempo-espera-stars">
+                                        <input type="radio" id="tiempo5" name="tiempo_espera" value="5" required>
+                                        <label for="tiempo5" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="tiempo4" name="tiempo_espera" value="4">
+                                        <label for="tiempo4" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="tiempo3" name="tiempo_espera" value="3">
+                                        <label for="tiempo3" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="tiempo2" name="tiempo_espera" value="2">
+                                        <label for="tiempo2" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="tiempo1" name="tiempo_espera" value="1">
+                                        <label for="tiempo1" class="bi bi-star-fill"></label>
+                                    </div>
+                                </div>
+
+                                <!-- Amabilidad del Personal -->
+                                <div class="mb-4">
+                                    <label class="form-label text-center w-100 fs-5">Amabilidad del Personal</label>
+                                    <div class="rating-container" id="amabilidad-stars">
+                                        <input type="radio" id="amabilidad5" name="amabilidad" value="5" required>
+                                        <label for="amabilidad5" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="amabilidad4" name="amabilidad" value="4">
+                                        <label for="amabilidad4" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="amabilidad3" name="amabilidad" value="3">
+                                        <label for="amabilidad3" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="amabilidad2" name="amabilidad" value="2">
+                                        <label for="amabilidad2" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="amabilidad1" name="amabilidad" value="1">
+                                        <label for="amabilidad1" class="bi bi-star-fill"></label>
+                                    </div>
+                                </div>
+
+                                <!-- Calidad del Servicio -->
+                                <div class="mb-4">
+                                    <label class="form-label text-center w-100 fs-5">Calidad del Servicio</label>
+                                    <div class="rating-container" id="calidad-stars">
+                                        <input type="radio" id="calidad5" name="calidad_servicio" value="5" required>
+                                        <label for="calidad5" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="calidad4" name="calidad_servicio" value="4">
+                                        <label for="calidad4" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="calidad3" name="calidad_servicio" value="3">
+                                        <label for="calidad3" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="calidad2" name="calidad_servicio" value="2">
+                                        <label for="calidad2" class="bi bi-star-fill"></label>
+                                        <input type="radio" id="calidad1" name="calidad_servicio" value="1">
+                                        <label for="calidad1" class="bi bi-star-fill"></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Comentarios -->
+                            <div class="mb-4">
+                                <label for="comentario" class="form-label">Comentarios (opcional):</label>
+                                <textarea class="form-control" id="comentario" name="comentario" rows="3" placeholder="Dinos qué podemos mejorar o qué te gustó de nuestro servicio..."></textarea>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary py-3">
+                                    <i class="bi bi-send me-2"></i> Enviar Evaluación
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <p class="text-muted">Gracias por confiar en nosotros</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript de Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

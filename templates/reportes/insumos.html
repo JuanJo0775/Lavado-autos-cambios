@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Insumos - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Reporte de Consumo de Insumos{% endblock %}
+
+{% block header_actions %}
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">
+        <i class="bi bi-printer"></i> Imprimir
+    </button>
+    <a href="{{ url_for('reportes.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Reportes
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Selector de período -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('reportes.insumos') }}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="periodo" class="form-label">Período a analizar</label>
+                <select class="form-select" id="periodo" name="periodo">
+                    <option value="7" {% if periodo == 7 %}selected{% endif %}>Última semana</option>
+                    <option value="30" {% if periodo == 30 %}selected{% endif %}>Último mes</option>
+                    <option value="90" {% if periodo == 90 %}selected{% endif %}>Últimos 3 meses</option>
+                    <option value="180" {% if periodo == 180 %}selected{% endif %}>Últimos 6 meses</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted">
+                    Período analizado: <strong>{{ fecha_inicio.strftime('%d/%m/%Y') }}</strong> al <strong>{{ fecha_fin.strftime('%d/%m/%Y') }}</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Actualizar Análisis
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Consumo de insumos -->
+<div class="card shadow mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Consumo de Insumos en el Período</h6>
+        <span class="badge bg-primary">{{ insumos_usados|length }} insumos</span>
+    </div>
+    <div class="card-body">
+        {% if insumos_usados|length > 0 %}
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Insumo</th>
+                                <th class="text-center">Cantidad Utilizada</th>
+                                <th class="text-end">Costo Total</th>
+                                <th class="text-end">% del Consumo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set total_cantidad = namespace(value=0) %}
+                            {% set total_costo = namespace(value=0) %}
+                            
+                            {% for insumo_id, data in insumos_usados.items() %}
+                            {% set total_cantidad.value = total_cantidad.value + data.cantidad %}
+                            {% set total_costo.value = total_costo.value + data.costo %}
+                            {% endfor %}
+                            
+                            {% for insumo_id, data in insumos_usados.items() %}
+                            <tr>
+                                <td>{{ data.nombre }}</td>
+                                <td class="text-center">{{ data.cantidad }}</td>
+                                <td class="text-end">${{ data.costo|round(2) }}</td>
+                                <td class="text-end">
+                                    {% if total_costo.value > 0 %}
+                                    {{ ((data.costo / total_costo.value) * 100)|round(1) }}%
+                                    {% else %}
+                                    0%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            
+                            <tr class="table-primary">
+                                <td><strong>TOTAL</strong></td>
+                                <td class="text-center"><strong>{{ total_cantidad.value }}</strong></td>
+                                <td class="text-end"><strong>${{ total_costo.value|round(2) }}</strong></td>
+                                <td class="text-end">100%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div style="height: 300px;">
+                    <canvas id="insumosChart"></canvas>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-exclamation-circle text-warning fs-1 mb-3"></i>
+            <h5>No hay datos de consumo</h5>
+            <p class="text-muted">No se ha registrado consumo de insumos durante el período seleccionado.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Necesidades de reposición -->
+<div class="card shadow mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Necesidades de Reposición</h6>
+        <span class="badge bg-danger">{{ necesidades_reposicion|length }} insumos</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Insumo</th>
+                        <th class="text-center">Stock Actual</th>
+                        <th class="text-center">Consumo Diario</th>
+                        <th class="text-center">Días Restantes</th>
+                        <th class="text-center">Prioridad</th>
+                        <th class="text-end">Cantidad Recomendada</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if necesidades_reposicion %}
+                    {% for item in necesidades_reposicion %}
+                    <tr>
+                        <td>{{ item.nombre }}</td>
+                        <td class="text-center">
+                            {% if item.stock_actual == 0 %}
+                            <span class="badge bg-danger">Agotado</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">{{ item.stock_actual }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ item.consumo_diario|round(2) }}</td>
+                        <td class="text-center">
+                            {% if item.dias_restantes == float('inf') %}
+                            <span class="badge bg-success">∞</span>
+                            {% elif item.dias_restantes < 3 %}
+                            <span class="badge bg-danger">{{ item.dias_restantes|round(1) }}</span>
+                            {% elif item.dias_restantes < 7 %}
+                            <span class="badge bg-warning text-dark">{{ item.dias_restantes|round(1) }}</span>
+                            {% else %}
+                            <span class="badge bg-info">{{ item.dias_restantes|round(1) }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if item.stock_actual == 0 or item.dias_restantes < 3 %}
+                            <span class="badge bg-danger">Alta</span>
+                            {% elif item.dias_restantes < 7 %}
+                            <span class="badge bg-warning text-dark">Media</span>
+                            {% else %}
+                            <span class="badge bg-info">Baja</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <strong>{{ item.cantidad_recomendada }}</strong> unidades
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-emoji-smile text-success fs-1 mb-3"></i>
+                                <h5>Inventario Óptimo</h5>
+                                <p class="text-muted">No hay insumos que requieran reposición inmediata. El inventario actual es suficiente para la demanda prevista.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Análisis de consumo y recomendaciones -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Tendencia de Consumo</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 250px;">
+                    <canvas id="tendenciaChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    <h6 class="border-bottom pb-2">Análisis de Tendencia</h6>
+                    <p>
+                        {% if insumos_usados|length > 0 %}
+                        El consumo promedio diario durante el período fue de 
+                        <strong>{{ (total_cantidad.value / periodo)|round(2) }}</strong> unidades, 
+                        con un costo aproximado de 
+                        <strong>${{ (total_costo.value / periodo)|round(2) }}</strong> por día.
+                        {% else %}
+                        No hay suficientes datos para realizar un análisis de tendencia.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Recomendaciones</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="border-bottom pb-2">Optimización de Inventario</h6>
+                    <ul>
+                        {% if necesidades_reposicion|length > 0 %}
+                        <li class="mb-2">
+                            <strong>Reposición Urgente:</strong> 
+                            Se recomienda reponer inmediatamente los insumos con menos de 3 días de stock disponible.
+                        </li>
+                        {% endif %}
+                        <li class="mb-2">
+                            <strong>Compras por Volumen:</strong> 
+                            Considere comprar en mayor cantidad los insumos de uso frecuente para obtener mejores precios.
+                        </li>
+                        <li class="mb-2">
+                            <strong>Rotación de Inventario:</strong> 
+                            Revise los insumos con menor uso para evaluar su continuidad o buscar alternativas.
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-lightbulb me-2"></i>
+                    <strong>Consejo:</strong> Implemente un sistema de alerta automática cuando los insumos lleguen a niveles críticos para evitar interrupciones en el servicio.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de compras sugerida -->
+{% if necesidades_reposicion|length > 0 %}
+<div class="card shadow mb-4">
+    <div class="card-header">
+        <h6 class="m-0 font-weight-bold">Lista de Compras Sugerida</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Insumo</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-center">Precio Unitario Est.</th>
+                                <th class="text-end">Costo Total Est.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set costo_total = namespace(value=0) %}
+                            
+                            {% for item in necesidades_reposicion %}
+                            {% set precio_unitario = 10 %}  <!-- Valor estimado, ajustar con datos reales -->
+                            {% set costo_item = item.cantidad_recomendada * precio_unitario %}
+                            {% set costo_total.value = costo_total.value + costo_item %}
+                            
+                            <tr>
+                                <td>{{ item.nombre }}</td>
+                                <td class="text-center">{{ item.cantidad_recomendada }}</td>
+                                <td class="text-center">${{ precio_unitario }}</td>
+                                <td class="text-end">${{ costo_item }}</td>
+                            </tr>
+                            {% endfor %}
+                            
+                            <tr class="table-light">
+                                <td colspan="3" class="text-end"><strong>TOTAL ESTIMADO:</strong></td>
+                                <td class="text-end"><strong>${{ costo_total.value }}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card border-left-warning h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Inversión Requerida</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">${{ costo_total.value }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-cash-stack fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 mt-3">
+                    <button class="btn btn-warning" onclick="window.print()">
+                        <i class="bi bi-printer me-2"></i> Imprimir Lista de Compras
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if insumos_usados|length > 0 %}
+        // Gráfico: Consumo de Insumos
+        const ctxInsumos = document.getElementById('insumosChart').getContext('2d');
+        
+        // Preparar datos para el gráfico
+        const insumosLabels = [];
+        const insumosData = [];
+        const insumosColores = [
+            'rgba(78, 115, 223, 0.8)',
+            'rgba(28, 200, 138, 0.8)',
+            'rgba(246, 194, 62, 0.8)',
+            'rgba(231, 74, 59, 0.8)',
+            'rgba(54, 185, 204, 0.8)',
+            'rgba(90, 92, 105, 0.8)'
+        ];
+        
+        // Ordenar por costo (descendente)
+        const insumosOrdenados = Object.entries({{ insumos_usados|tojson }})
+            .sort((a, b) => b[1].costo - a[1].costo)
+            .slice(0, 5);  // Tomar los 5 principales
+        
+        // Preparar datos para el gráfico
+        insumosOrdenados.forEach((item, index) => {
+            insumosLabels.push(item[1].nombre);
+            insumosData.push(item[1].costo);
+        });
+        
+        // Crear gráfico de consumo de insumos
+        new Chart(ctxInsumos, {
+            type: 'doughnut',
+            data: {
+                labels: insumosLabels,
+                datasets: [{
+                    data: insumosData,
+                    backgroundColor: insumosColores.slice(0, insumosLabels.length),
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 15,
+                            padding: 10
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Top 5 Insumos por Costo'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                let value = context.raw || 0;
+                                return `${label}: $${value.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Gráfico: Tendencia de Consumo (simulada)
+        const ctxTendencia = document.getElementById('tendenciaChart').getContext('2d');
+        
+        // Datos simulados para tendencia
+        const diasPeriodo = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'];
+        
+        // Crear gráfico de tendencia
+        new Chart(ctxTendencia, {
+            type: 'line',
+            data: {
+                labels: diasPeriodo,
+                datasets: [{
+                    label: 'Consumo Semanal (unidades)',
+                    data: [
+                        {{ total_cantidad.value * 0.2 }},
+                        {{ total_cantidad.value * 0.3 }},
+                        {{ total_cantidad.value * 0.25 }},
+                        {{ total_cantidad.value * 0.25 }}
+                    ],
+                    borderColor: 'rgba(78, 115, 223, 1)',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Costo Semanal ($)',
+                    data: [
+                        {{ total_costo.value * 0.2 }},
+                        {{ total_costo.value * 0.3 }},
+                        {{ total_costo.value * 0.25 }},
+                        {{ total_costo.value * 0.25 }}
+                    ],
+                    borderColor: 'rgba(28, 200, 138, 1)',
+                    backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Unidades'
+                        }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Costo ($)'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}

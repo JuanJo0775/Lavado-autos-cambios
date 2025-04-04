@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Enlace de Evaluación - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Enlace de Evaluación Generado{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('servicios.detalle', id=servicio.Id) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver al Servicio
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-check-circle me-2"></i>Enlace Generado Correctamente</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex">
+                        <i class="bi bi-info-circle fs-4 me-3"></i>
+                        <div>
+                            <p class="mb-0">Se ha generado un enlace para que el cliente evalúe el servicio. Comparta este enlace con el cliente a través de WhatsApp, correo electrónico o mensaje de texto.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <h6 class="border-bottom pb-2 mb-3">Información del Servicio</h6>
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-2">
+                        <div class="text-muted">Servicio #:</div>
+                        <div class="fw-bold">{{ servicio.Id }}</div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="text-muted">Fecha:</div>
+                        <div>{{ servicio.Fecha.strftime('%d/%m/%Y') }}</div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="text-muted">Vehículo:</div>
+                        <div>{{ servicio.Placa }}</div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="text-muted">Tipo de Lavado:</div>
+                        <div>{{ servicio.tipo_lavado.Nombre if servicio.tipo_lavado else "N/A" }}</div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2 mb-3">Enlace de Evaluación</h6>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="enlaceEvaluacion" value="{{ enlace }}" readonly>
+                        <button class="btn btn-primary" type="button" onclick="copiarEnlace()">
+                            <i class="bi bi-clipboard"></i> Copiar
+                        </button>
+                    </div>
+                    <div class="form-text">Este enlace estará disponible hasta que el cliente realice la evaluación.</div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('servicios.detalle', id=servicio.Id) }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-left me-2"></i> Volver al Detalle del Servicio
+                    </a>
+                    <a href="https://wa.me/?text={{ enlace|urlencode }}" target="_blank" class="btn btn-success">
+                        <i class="bi bi-whatsapp me-2"></i> Compartir por WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copiarEnlace() {
+        var enlaceInput = document.getElementById('enlaceEvaluacion');
+        enlaceInput.select();
+        enlaceInput.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+        
+        // Cambiar el texto del botón temporalmente
+        var boton = event.target;
+        if (boton.tagName !== 'BUTTON') {
+            boton = boton.closest('button');
+        }
+        var textoOriginal = boton.innerHTML;
+        boton.innerHTML = '<i class="bi bi-check"></i> Copiado';
+        
+        setTimeout(function() {
+            boton.innerHTML = textoOriginal;
+        }, 2000);
+    }
+</script>
+{% endblock %}

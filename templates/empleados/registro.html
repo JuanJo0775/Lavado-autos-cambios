@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Empleado - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Registrar Nuevo Empleado{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('empleados.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Empleados
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Información del Empleado</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('empleados.registrar') }}" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" 
+                               value="{{ valores.nombre if valores else '' }}" required>
+                        <div class="invalid-feedback">
+                            Por favor ingrese el nombre del empleado
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="apellidos" class="form-label">Apellidos</label>
+                        <input type="text" class="form-control" id="apellidos" name="apellidos" 
+                               value="{{ valores.apellidos if valores else '' }}" required>
+                        <div class="invalid-feedback">
+                            Por favor ingrese los apellidos del empleado
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
+                        <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" 
+                               value="{{ valores.fecha_nacimiento if valores else '' }}" required>
+                        <div class="invalid-feedback">
+                            Por favor seleccione la fecha de nacimiento
+                        </div>
+                        <div class="form-text">El empleado debe ser mayor de edad (18 años)</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="estado" class="form-label">Estado</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="Activo" {% if valores and valores.estado == 'Activo' %}selected{% endif %}>Activo</option>
+                            <option value="Inactivo" {% if valores and valores.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-person-plus me-2"></i> Registrar Empleado
+                        </button>
+                        <a href="{{ url_for('empleados.listar') }}" class="btn btn-outline-secondary">
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Validación del formulario con Bootstrap
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fetch all the forms we want to apply custom Bootstrap validation styles to
+        const forms = document.querySelectorAll('.needs-validation');
+        
+        // Loop over them and prevent submission
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    });
+</script>
+{% endblock %}

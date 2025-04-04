@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Empleado - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Detalle de Empleado: {{ empleado.nombre_completo }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('empleados.editar', id=empleado.Id) }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-pencil"></i> Editar
+    </a>
+    <form method="POST" action="{{ url_for('empleados.cambiar_estado', id=empleado.Id) }}" class="d-inline me-2">
+        <button type="submit" class="btn btn-sm btn-{% if empleado.Estado == 'Activo' %}outline-danger{% else %}outline-success{% endif %}"
+                onclick="return confirm('¿Está seguro de {% if empleado.Estado == 'Activo' %}desactivar{% else %}activar{% endif %} a este empleado?')">
+            <i class="bi bi-{% if empleado.Estado == 'Activo' %}person-x{% else %}person-check{% endif %}"></i>
+            {% if empleado.Estado == 'Activo' %}Desactivar{% else %}Activar{% endif %}
+        </button>
+    </form>
+    <a href="{{ url_for('empleados.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Empleados
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Información principal -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Información Personal</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <div class="avatar-circle">
+                        <span class="avatar-initials">{{ empleado.Nombre[0] }}{{ empleado.Apellidos.split()[0][0] }}</span>
+                    </div>
+                    <h4 class="mt-3">{{ empleado.nombre_completo }}</h4>
+                    <span class="badge {% if empleado.Estado == 'Activo' %}bg-success{% else %}bg-secondary{% endif %}">
+                        {{ empleado.Estado }}
+                    </span>
+                </div>
+                <div class="row">
+                    <div class="col-sm-4 text-muted">ID:</div>
+                    <div class="col-sm-8">{{ empleado.Id }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4 text-muted">Nombre:</div>
+                    <div class="col-sm-8">{{ empleado.Nombre }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4 text-muted">Apellidos:</div>
+                    <div class="col-sm-8">{{ empleado.Apellidos }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4 text-muted">Fecha Nac.:</div>
+                    <div class="col-sm-8">{{ empleado.Fecha_Nacimiento.strftime('%d/%m/%Y') }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-sm-4 text-muted">Edad:</div>
+                    <div class="col-sm-8">{{ empleado.edad }} años</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Turnos asignados -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold">Horario de Trabajo</h6>
+                <button class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus"></i> Asignar Turno
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Día</th>
+                                <th>Horario</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for turno in turnos %}
+                            <tr>
+                                <td>{{ turno.Día }}</td>
+                                <td>{{ turno.jornada.rango_horario }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-3">
+                                    No hay turnos asignados para este empleado
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estadísticas y servicios -->
+    <div class="col-lg-8">
+        <div class="row">
+            <!-- Estadísticas rápidas -->
+            <div class="col-md-6 mb-4">
+                <div class="card border-left-primary h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Servicios Recibidos Hoy
+                                </div>
+                                <div class="h3 mb-0 font-weight-bold text-gray-800">{{ empleado.servicios_recibidos_hoy }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-clipboard-check fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card border-left-success h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    Servicios Lavados Hoy
+                                </div>
+                                <div class="h3 mb-0 font-weight-bold text-gray-800">{{ empleado.servicios_lavados_hoy }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-water fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Servicios recibidos recientes -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Servicios Recibidos Recientes</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Fecha</th>
+                                <th>Vehículo</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for servicio in servicios_recibidos %}
+                            <tr>
+                                <td>{{ servicio.Id }}</td>
+                                <td>{{ servicio.Fecha.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ servicio.Placa }}</td>
+                                <td>{{ servicio.tipo_lavado.Nombre }}</td>
+                                <td>
+                                    {% if servicio.Estado == 'Completado' %}
+                                    <span class="badge bg-success">Completado</span>
+                                    {% elif servicio.Estado == 'En proceso' %}
+                                    <span class="badge bg-warning text-dark">En proceso</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ servicio.Estado }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('servicios.detalle', id=servicio.Id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-3">No hay servicios recibidos recientes</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Servicios lavados recientes -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Servicios Lavados Recientes</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Fecha</th>
+                                <th>Vehículo</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for servicio in servicios_lavados %}
+                            <tr>
+                                <td>{{ servicio.Id }}</td>
+                                <td>{{ servicio.Fecha.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ servicio.Placa }}</td>
+                                <td>{{ servicio.tipo_lavado.Nombre }}</td>
+                                <td>
+                                    {% if servicio.Estado == 'Completado' %}
+                                    <span class="badge bg-success">Completado</span>
+                                    {% elif servicio.Estado == 'En proceso' %}
+                                    <span class="badge bg-warning text-dark">En proceso</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ servicio.Estado }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('servicios.detalle', id=servicio.Id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-3">No hay servicios lavados recientes</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 100px;
+    height: 100px;
+    background-color: #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+.avatar-initials {
+    font-size: 2.5rem;
+    color: #6c757d;
+    font-weight: bold;
+}
+</style>
+{% endblock %}

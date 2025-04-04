@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Reportes{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Informes y Estadísticas</h5>
+                <p class="card-text">Seleccione el tipo de reporte que desea generar para analizar el rendimiento del negocio:</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reporte Diario -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="text-center mb-3">
+                    <i class="bi bi-calendar-day text-primary" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="card-title text-center">Reporte Diario</h5>
+                <p class="card-text flex-grow-1">Visualice estadísticas detalladas de servicios, ingresos y rendimiento para un día específico.</p>
+                <a href="{{ url_for('reportes.diario') }}" class="btn btn-primary mt-auto">
+                    <i class="bi bi-bar-chart"></i> Generar Reporte
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reporte Mensual -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="text-center mb-3">
+                    <i class="bi bi-calendar-month text-success" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="card-title text-center">Reporte Mensual</h5>
+                <p class="card-text flex-grow-1">Analice tendencias, ingresos y distribución de servicios durante un mes completo.</p>
+                <a href="{{ url_for('reportes.mensual') }}" class="btn btn-success mt-auto">
+                    <i class="bi bi-bar-chart"></i> Generar Reporte
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reporte de Insumos -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="text-center mb-3">
+                    <i class="bi bi-box-seam text-warning" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="card-title text-center">Reporte de Insumos</h5>
+                <p class="card-text flex-grow-1">Verifique el consumo de insumos, necesidades de reposición y proyecciones de inventario.</p>
+                <a href="{{ url_for('reportes.insumos') }}" class="btn btn-warning mt-auto">
+                    <i class="bi bi-bar-chart"></i> Generar Reporte
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reporte de Empleados -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="text-center mb-3">
+                    <i class="bi bi-people text-info" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="card-title text-center">Reporte de Empleados</h5>
+                <p class="card-text flex-grow-1">Evalúe el desempeño, productividad y carga de trabajo de los empleados en un período específico.</p>
+                <a href="{{ url_for('reportes.empleados') }}" class="btn btn-info mt-auto">
+                    <i class="bi bi-bar-chart"></i> Generar Reporte
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reporte de Vehículos -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="text-center mb-3">
+                    <i class="bi bi-car-front text-danger" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="card-title text-center">Reporte de Vehículos</h5>
+                <p class="card-text flex-grow-1">Obtenga estadísticas sobre los tipos de vehículos más frecuentes y clientes recurrentes.</p>
+                <a href="{{ url_for('reportes.vehiculos') }}" class="btn btn-danger mt-auto">
+                    <i class="bi bi-bar-chart"></i> Generar Reporte
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reporte de Inventario -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="text-center mb-3">
+                    <i class="bi bi-clipboard-data text-secondary" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="card-title text-center">Reporte de Inventario</h5>
+                <p class="card-text flex-grow-1">Visualice el estado actual del inventario, valor total y distribución por categorías.</p>
+                <a href="{{ url_for('inventario.reporte') }}" class="btn btn-secondary mt-auto">
+                    <i class="bi bi-bar-chart"></i> Generar Reporte
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas rápidas -->
+<div class="card mt-2">
+    <div class="card-header">
+        <h5 class="mb-0">Estadísticas Rápidas</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="card bg-light">
+                    <div class="card-body py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Servicios Este Mes</h6>
+                                <h3 class="mb-0">{{ stats.servicios_mes if stats else '0' }}</h3>
+                            </div>
+                            <i class="bi bi-calendar-check text-primary fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="card bg-light">
+                    <div class="card-body py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Ingresos Este Mes</h6>
+                                <h3 class="mb-0">${{ stats.ingresos_mes if stats else '0' }}</h3>
+                            </div>
+                            <i class="bi bi-cash text-success fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="card bg-light">
+                    <div class="card-body py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Clientes Recurrentes</h6>
+                                <h3 class="mb-0">{{ stats.clientes_recurrentes if stats else '0' }}</h3>
+                            </div>
+                            <i class="bi bi-people text-info fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

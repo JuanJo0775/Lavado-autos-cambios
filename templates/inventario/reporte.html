@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Inventario - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Reporte de Inventario{% endblock %}
+
+{% block header_actions %}
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">
+        <i class="bi bi-printer"></i> Imprimir
+    </button>
+    <a href="{{ url_for('inventario.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver al Inventario
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Tarjetas de resumen -->
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-start border-primary border-5 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Total de Items</div>
+                        <div class="h3 mb-0 font-weight-bold">{{ total_items }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-box-seam fs-1 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-start border-success border-5 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Valor Total</div>
+                        <div class="h3 mb-0 font-weight-bold">${{ valor_total|round(2) }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-currency-dollar fs-1 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-start border-warning border-5 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Items Críticos</div>
+                        <div class="h3 mb-0 font-weight-bold">{{ items_criticos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-start border-danger border-5 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Items Agotados</div>
+                        <div class="h3 mb-0 font-weight-bold">{{ items_agotados }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-x-circle fs-1 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos y Análisis -->
+<div class="row">
+    <!-- Valor por Categoría -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Valor de Inventario por Categoría</h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="valorPorTipoChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estado del Stock -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Estado del Stock</h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="estadoStockChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Listado de Inventario -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Detalle del Inventario</h5>
+        <div class="text-muted">{{ 'Fecha de generación: ' + now.strftime('%d/%m/%Y %H:%M:%S') }}</div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Insumo</th>
+                        <th>Categoría</th>
+                        <th class="text-center">Stock</th>
+                        <th class="text-end">Precio Unitario</th>
+                        <th class="text-end">Valor Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in inventario %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ item.insumo.Nombre }}</td>
+                        <td>{{ item.insumo.tipo_insumo.Nombre }}</td>
+                        <td class="text-center">
+                            {% if item.Stock > 10 %}
+                            <span class="badge bg-success">{{ item.Stock }}</span>
+                            {% elif item.Stock > 0 %}
+                            <span class="badge bg-warning text-dark">{{ item.Stock }}</span>
+                            {% else %}
+                            <span class="badge bg-danger">{{ item.Stock }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">${{ item.insumo.Precio_Unitario }}</td>
+                        <td class="text-end">${{ item.valor_total|round(2) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold">
+                        <td colspan="5" class="text-end">TOTAL:</td>
+                        <td class="text-end">${{ valor_total|round(2) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Análisis de Inventario -->
+<div class="row">
+    <!-- Items con Stock Crítico -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Items con Stock Crítico</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Insumo</th>
+                                <th>Categoría</th>
+                                <th class="text-center">Stock</th>
+                                <th class="text-end">Recomendación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set items_criticos_lista = inventario|selectattr('Stock', 'lt', 10)|selectattr('Stock', 'gt', 0)|list %}
+                            {% for item in items_criticos_lista %}
+                            <tr>
+                                <td>{{ item.insumo.Nombre }}</td>
+                                <td>{{ item.insumo.tipo_insumo.Nombre }}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-warning text-dark">{{ item.Stock }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="badge bg-primary">Comprar {{ 30 - item.Stock }} unidades</span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3">No hay items con stock crítico</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Items Agotados -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Items Agotados</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Insumo</th>
+                                <th>Categoría</th>
+                                <th class="text-end">Precio Unitario</th>
+                                <th class="text-end">Recomendación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set items_agotados_lista = inventario|selectattr('Stock', 'eq', 0)|list %}
+                            {% for item in items_agotados_lista %}
+                            <tr>
+                                <td>{{ item.insumo.Nombre }}</td>
+                                <td>{{ item.insumo.tipo_insumo.Nombre }}</td>
+                                <td class="text-end">${{ item.insumo.Precio_Unitario }}</td>
+                                <td class="text-end">
+                                    <span class="badge bg-danger">Comprar urgente</span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3">No hay items agotados</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recomendaciones -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Recomendaciones</h5>
+    </div>
+    <div class="card-body">
+        <ul class="mb-0">
+            <li class="mb-2">Revisar y reponer los <strong>{{ items_criticos }} items con stock crítico</strong> para evitar interrupciones en los servicios.</li>
+            <li class="mb-2">Considerar comprar un mínimo de 30 unidades de cada insumo para optimizar costos de transporte.</li>
+            <li class="mb-2">Contactar con proveedores para los <strong>{{ items_agotados }} items agotados</strong> de manera urgente.</li>
+            <li class="mb-2">Realizar un conteo físico del inventario mensualmente para detectar discrepancias.</li>
+            <li class="mb-2">Considerar reducir el precio de insumos con baja rotación para disminuir el valor del inventario estancado.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico: Valor por Tipo de Insumo
+    const ctxValor = document.getElementById('valorPorTipoChart').getContext('2d');
+    
+    const datosValorPorTipo = {
+        labels: [
+            {% for tipo, valor in valor_por_tipo.items() %}
+            "{{ tipo }}",
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for tipo, valor in valor_por_tipo.items() %}
+                {{ valor|round(2) }},
+                {% endfor %}
+            ],
+            backgroundColor: [
+                'rgba(78, 115, 223, 0.8)',
+                'rgba(54, 185, 204, 0.8)',
+                'rgba(246, 194, 62, 0.8)',
+                'rgba(231, 74, 59, 0.8)',
+                'rgba(28, 200, 138, 0.8)'
+            ],
+            borderWidth: 1
+        }]
+    };
+    
+    new Chart(ctxValor, {
+        type: 'doughnut',
+        data: datosValorPorTipo,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+    
+    // Gráfico: Estado del Stock
+    const ctxStock = document.getElementById('estadoStockChart').getContext('2d');
+    
+    // Calcular cantidades
+    const stockNormal = {{ inventario|selectattr('Stock', 'gt', 10)|list|length }};
+    const stockCritico = {{ inventario|selectattr('Stock', 'le', 10)|selectattr('Stock', 'gt', 0)|list|length }};
+    const stockAgotado = {{ inventario|selectattr('Stock', 'eq', 0)|list|length }};
+    
+    const datosEstadoStock = {
+        labels: ['Stock Normal', 'Stock Crítico', 'Agotado'],
+        datasets: [{
+            data: [stockNormal, stockCritico, stockAgotado],
+            backgroundColor: [
+                'rgba(28, 200, 138, 0.8)',  // Verde
+                'rgba(246, 194, 62, 0.8)',  // Amarillo
+                'rgba(231, 74, 59, 0.8)'    // Rojo
+            ],
+            borderWidth: 1
+        }]
+    };
+    
+    new Chart(ctxStock, {
+        type: 'bar',
+        data: datosEstadoStock,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

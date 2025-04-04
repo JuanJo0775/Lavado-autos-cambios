@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Tipos de Insumo - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Tipos de Insumo{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('insumos.crear_tipo') }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-plus-lg"></i> Nueva Categoría
+    </a>
+    <a href="{{ url_for('insumos.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Insumos
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Lista de tipos de insumo -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Categorías de Insumos</h6>
+        <span class="badge bg-primary">{{ tipos|length }} categorías</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th class="text-center">Insumos Asociados</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tipo in tipos %}
+                    <tr>
+                        <td>{{ tipo.Id }}</td>
+                        <td><strong>{{ tipo.Nombre }}</strong></td>
+                        <td>
+                            {% if tipo.Descripción %}
+                            {{ tipo.Descripción }}
+                            {% else %}
+                            <span class="text-muted">Sin descripción</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-info">{{ tipo.insumos|length }}</span>
+                        </td>
+                        <td>
+                            {% if tipo.Estado == 1 %}
+                            <span class="badge bg-success">Activo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group">
+                                <a href="#" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editarTipoModal{{ tipo.Id }}">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleEstadoTipo({{ tipo.Id }}, '{{ tipo.estado_texto }}')">
+                                    <i class="bi bi-toggle-{% if tipo.Estado == 1 %}on{% else %}off{% endif %}"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Modal de edición para cada tipo -->
+                    <div class="modal fade" id="editarTipoModal{{ tipo.Id }}" tabindex="-1" aria-labelledby="editarTipoModalLabel{{ tipo.Id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="editarTipoModalLabel{{ tipo.Id }}">Editar Categoría</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('insumos.editar_tipo', id=tipo.Id) }}">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="nombre{{ tipo.Id }}" class="form-label">Nombre</label>
+                                            <input type="text" class="form-control" id="nombre{{ tipo.Id }}" name="nombre" required value="{{ tipo.Nombre }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="descripcion{{ tipo.Id }}" class="form-label">Descripción</label>
+                                            <textarea class="form-control" id="descripcion{{ tipo.Id }}" name="descripcion" rows="3">{{ tipo.Descripción }}</textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="estado{{ tipo.Id }}" class="form-label">Estado</label>
+                                            <select class="form-select" id="estado{{ tipo.Id }}" name="estado">
+                                                <option value="1" {% if tipo.Estado == 1 %}selected{% endif %}>Activo</option>
+                                                <option value="0" {% if tipo.Estado == 0 %}selected{% endif %}>Inactivo</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-tags text-muted mb-3" style="font-size: 2.5rem;"></i>
+                                <h5 class="text-muted">No hay categorías registradas</h5>
+                                <p class="text-muted mb-3">Comience creando una nueva categoría.</p>
+                                <a href="{{ url_for('insumos.crear_tipo') }}" class="btn btn-primary">
+                                    <i class="bi bi-plus-lg"></i> Crear Categoría
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen de categorías -->
+{% if tipos|length > 0 %}
+<div class="row mt-4">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Distribución de Insumos por Categoría</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 250px; position: relative;">
+                    <canvas id="distribucionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Información</h6>
+            </div>
+            <div class="card-body">
+                <p>Las categorías le permiten organizar los insumos según su tipo para facilitar su gestión y seguimiento.</p>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Consejo:</strong> Una buena categorización de insumos le ayudará a:
+                    <ul class="mb-0 mt-1">
+                        <li>Mantener un inventario organizado</li>
+                        <li>Facilitar los reportes de consumo</li>
+                        <li>Agilizar la búsqueda de productos</li>
+                    </ul>
+                </div>
+                
+                <div class="d-grid mt-3">
+                    <a href="{{ url_for('insumos.crear_tipo') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-2"></i> Crear Nueva Categoría
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Formulario de creación rápida de categoría -->
+<div class="modal fade" id="crearTipoModal" tabindex="-1" aria-labelledby="crearTipoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="crearTipoModalLabel">Nueva Categoría de Insumo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('insumos.crear_tipo') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Categoría</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if tipos|length > 0 %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gráfico de distribución de insumos por categoría
+        const ctx = document.getElementById('distribucionChart').getContext('2d');
+        
+        // Preparar datos
+        const labels = [];
+        const data = [];
+        {% for tipo in tipos %}
+        labels.push('{{ tipo.Nombre }}');
+        data.push({{ tipo.insumos|length }});
+        {% endfor %}
+        
+        // Colores para el gráfico
+        const backgroundColors = [
+            'rgba(78, 115, 223, 0.8)',
+            'rgba(54, 185, 204, 0.8)',
+            'rgba(246, 194, 62, 0.8)',
+            'rgba(231, 74, 59, 0.8)',
+            'rgba(28, 200, 138, 0.8)',
+            'rgba(90, 92, 105, 0.8)'
+        ];
+        
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    });
+    
+    // Función para cambiar el estado de un tipo
+    function toggleEstadoTipo(id, estadoActual) {
+        if (confirm(`¿Está seguro de cambiar el estado de esta categoría a ${estadoActual == 'Activo' ? 'Inactivo' : 'Activo'}?`)) {
+            // En un entorno real, aquí se enviaría una petición AJAX
+            // Por ahora, redireccionamos a una ruta ficticia
+            window.location.href = `{{ url_for('insumos.listar_tipos') }}?toggle=${id}`;
+        }
+    }
+</script>
+{% endif %}
+{% endblock %}

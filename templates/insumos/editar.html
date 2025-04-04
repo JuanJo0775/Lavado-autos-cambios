@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Insumo: {{ insumo.Nombre }} - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Editar Insumo{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('insumos.detalle', id=insumo.Id) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver al Detalle
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pencil-square me-2"></i>
+                    Editar Insumo: {{ insumo.Nombre }}
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('insumos.editar', id=insumo.Id) }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required 
+                                   value="{{ insumo.Nombre }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="tipo" class="form-label">Categoría <span class="text-danger">*</span></label>
+                            <select class="form-select" id="tipo" name="tipo" required>
+                                <option value="">Seleccione una categoría</option>
+                                {% for tipo in tipos_insumo %}
+                                <option value="{{ tipo.Id }}" 
+                                        {% if insumo.Id_TipoInsumo == tipo.Id %}selected{% endif %}>
+                                    {{ tipo.Nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="precio" class="form-label">Precio Unitario <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="precio" name="precio" required 
+                                       value="{{ insumo.Precio_Unitario }}" step="0.01" min="0.01">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="estado" class="form-label">Estado <span class="text-danger">*</span></label>
+                            <select class="form-select" id="estado" name="estado" required>
+                                <option value="Activo" {% if insumo.Estado == 'Activo' %}selected{% endif %}>
+                                    Activo
+                                </option>
+                                <option value="Inactivo" {% if insumo.Estado == 'Inactivo' %}selected{% endif %}>
+                                    Inactivo
+                                </option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12 mt-2">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Información:</strong> Si cambia el precio, este solo afectará a los nuevos servicios. 
+                                Los servicios existentes mantendrán el precio original.
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary py-2">
+                                <i class="bi bi-save me-2"></i> Guardar Cambios
+                            </button>
+                            <a href="{{ url_for('insumos.detalle', id=insumo.Id) }}" class="btn btn-outline-secondary">
+                                Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información adicional -->
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-box-seam me-2"></i>
+                    Estado Actual del Inventario
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Stock Actual</label>
+                            <div class="d-flex align-items-center">
+                                <span class="fs-5 me-2">{{ insumo.stock_actual }}</span>
+                                {% if insumo.stock_actual > 10 %}
+                                <span class="badge bg-success">Suficiente</span>
+                                {% elif insumo.stock_actual > 0 %}
+                                <span class="badge bg-warning text-dark">Crítico</span>
+                                {% else %}
+                                <span class="badge bg-danger">Agotado</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Valor del Inventario</label>
+                            <div class="fs-5 text-success">${{ insumo.valor_inventario|round(2) }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end">
+                    <a href="{{ url_for('inventario.registrar') }}?insumo={{ insumo.Id }}" class="btn btn-outline-success">
+                        <i class="bi bi-plus-lg me-2"></i> Agregar Stock
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

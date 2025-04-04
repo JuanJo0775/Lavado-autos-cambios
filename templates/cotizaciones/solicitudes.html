@@ -1,0 +1,130 @@
+```html
+{% extends "base.html" %}
+
+{% block title %}Solicitudes de Cotización - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Solicitudes de Cotización{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('cotizaciones.nueva_solicitud') }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-plus-lg"></i> Nueva Solicitud
+    </a>
+    <a href="{{ url_for('cotizaciones.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Cotizaciones
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Filtros de búsqueda -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('cotizaciones.listar_solicitudes') }}" class="row g-3">
+            <div class="col-md-4">
+                <label for="insumo" class="form-label">Insumo</label>
+                <input type="text" class="form-control" id="insumo" name="insumo" 
+                       value="{{ filtro_insumo if filtro_insumo else '' }}" placeholder="Buscar por nombre del insumo...">
+            </div>
+            <div class="col-md-4">
+                <label for="estado" class="form-label">Estado</label>
+                <select class="form-select" id="estado" name="estado">
+                    <option value="">Todos los estados</option>
+                    <option value="Activa" {% if filtro_estado == 'Activa' %}selected{% endif %}>Activa</option>
+                    <option value="Cerrada" {% if filtro_estado == 'Cerrada' %}selected{% endif %}>Cerrada</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de solicitudes -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Solicitudes de Cotización</h6>
+        <span class="badge bg-primary">{{ solicitudes|length }} solicitudes</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Insumo</th>
+                        <th class="text-center">Cantidad</th>
+                        <th>Publicada</th>
+                        <th>Fecha Límite</th>
+                        <th>Estado</th>
+                        <th class="text-center">Cotizaciones</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for solicitud in solicitudes %}
+                    <tr>
+                        <td>{{ solicitud.Id }}</td>
+                        <td>
+                            <strong>{{ solicitud.insumo.Nombre }}</strong><br>
+                            <small class="text-muted">{{ solicitud.insumo.tipo_insumo.Nombre }}</small>
+                        </td>
+                        <td class="text-center">{{ solicitud.Cantidad_Requerida }}</td>
+                        <td>{{ solicitud.Fecha_Publicacion.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            {% if solicitud.Fecha_Limite %}
+                            <span class="badge {% if solicitud.Fecha_Limite < hoy %}bg-danger{% else %}bg-info{% endif %}">
+                                {{ solicitud.Fecha_Limite.strftime('%d/%m/%Y') }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">Sin fecha límite</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if solicitud.Estado == 'Activa' %}
+                            <span class="badge bg-success">Activa</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Cerrada</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-info rounded-pill">
+                                {{ solicitud.cotizaciones_count if solicitud.cotizaciones_count is defined else 0 }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('cotizaciones.detalle_solicitud', id=solicitud.Id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Ver
+                            </a>
+                            {% if solicitud.Estado == 'Activa' %}
+                            <form method="POST" action="{{ url_for('cotizaciones.cerrar_solicitud', id=solicitud.Id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" 
+                                        onclick="return confirm('¿Está seguro de cerrar esta solicitud?')">
+                                    <i class="bi bi-lock"></i> Cerrar
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-clipboard-x text-muted mb-3" style="font-size: 2.5rem;"></i>
+                                <h5 class="text-muted">No hay solicitudes de cotización</h5>
+                                <p class="text-muted mb-3">No se encontraron solicitudes con los filtros seleccionados.</p>
+                                <a href="{{ url_for('cotizaciones.nueva_solicitud') }}" class="btn btn-primary">
+                                    <i class="bi bi-plus-lg"></i> Nueva Solicitud
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+```

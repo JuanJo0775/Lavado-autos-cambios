@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte Diario - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Reporte Diario: {{ fecha.strftime('%d/%m/%Y') }}{% endblock %}
+
+{% block header_actions %}
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">
+        <i class="bi bi-printer"></i> Imprimir
+    </button>
+    <a href="{{ url_for('reportes.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Reportes
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Selección de fecha -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('reportes.diario') }}" class="row g-2">
+                    <div class="col-md-4">
+                        <label for="fecha" class="form-label">Seleccione una fecha</label>
+                        <input type="date" class="form-control" id="fecha" name="fecha" value="{{ fecha.strftime('%Y-%m-%d') }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Consultar
+                        </button>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end justify-content-end">
+                        <div class="btn-group">
+                            <a href="{{ url_for('reportes.diario', fecha=(fecha - timedelta(days=1)).strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-chevron-left"></i> Día Anterior
+                            </a>
+                            <a href="{{ url_for('reportes.diario') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-calendar-day"></i> Hoy
+                            </a>
+                            <a href="{{ url_for('reportes.diario', fecha=(fecha + timedelta(days=1)).strftime('%Y-%m-%d')) }}" class="btn btn-outline-secondary">
+                                Día Siguiente <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen del día -->
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Total Servicios</div>
+                        <div class="h3 mb-0 font-weight-bold">{{ stats.total_servicios }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-car-front-fill fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Ingresos Totales</div>
+                        <div class="h3 mb-0 font-weight-bold">${{ stats.ingresos|round(2) }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-cash-stack fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Servicios Completados</div>
+                        <div class="h3 mb-0 font-weight-bold">{{ stats.completados }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Tiempo Promedio</div>
+                        <div class="h3 mb-0 font-weight-bold">
+                            {% if stats.tiempo_promedio %}
+                            {{ stats.tiempo_promedio|int }} min
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-clock-history fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row">
+    <!-- Distribución por tipo de lavado -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Distribución por Tipo de Lavado</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="tiposLavadoChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Distribución por hora -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Distribución por Hora</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="horasChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rendimiento de empleados -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Rendimiento de Empleados</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Empleado</th>
+                        <th class="text-center">Servicios Asignados</th>
+                        <th class="text-center">Completados</th>
+                        <th class="text-center">Tiempo Promedio</th>
+                        <th class="text-end">Eficiencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp_id, data in empleados.items() %}
+                    <tr>
+                        <td>{{ data.nombre }}</td>
+                        <td class="text-center">{{ data.servicios }}</td>
+                        <td class="text-center">{{ data.completados }}</td>
+                        <td class="text-center">
+                            {% if data.tiempo_promedio %}
+                            {{ data.tiempo_promedio|int }} min
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if data.completados > 0 and data.servicios > 0 %}
+                            <div class="progress">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ (data.completados / data.servicios) * 100 }}%"
+                                     aria-valuenow="{{ (data.completados / data.servicios) * 100 }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ ((data.completados / data.servicios) * 100)|int }}%
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">No hay datos de empleados para esta fecha.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Lista detallada de servicios -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Listado de Servicios</h6>
+        <span class="badge bg-primary">{{ servicios|length }} servicios</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Hora</th>
+                        <th>Vehículo</th>
+                        <th>Tipo de Lavado</th>
+                        <th>Empleados</th>
+                        <th>Precio</th>
+                        <th>Estado</th>
+                        <th>Duración</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for servicio in servicios %}
+                    <tr>
+                        <td>{{ servicio.Id }}</td>
+                        <td>
+                            Recibido: {{ servicio.Hora_Recibe.strftime('%H:%M') }}
+                            {% if servicio.Hora_Entrega %}
+                            <br>Entregado: {{ servicio.Hora_Entrega.strftime('%H:%M') }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ servicio.Placa }}</strong><br>
+                            <small class="text-muted">
+                                {% if servicio.vehiculo %}
+                                {{ servicio.vehiculo.Marca }} {{ servicio.vehiculo.Modelo }}
+                                {% else %}
+                                Vehículo no encontrado
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            {% if servicio.tipo_lavado %}
+                            {{ servicio.tipo_lavado.Nombre }}
+                            {% else %}
+                            Tipo no encontrado
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div><small>Recibió: {{ servicio.empleado_recibe.nombre_completo }}</small></div>
+                            <div><small>Lavó: {{ servicio.empleado_lava.nombre_completo }}</small></div>
+                        </td>
+                        <td>${{ servicio.Precio }}</td>
+                        <td>
+                            {% if servicio.Estado == 'En proceso' %}
+                            <span class="badge bg-warning text-dark">En proceso</span>
+                            {% elif servicio.Estado == 'Completado' %}
+                            <span class="badge bg-success">Completado</span>
+                            {% elif servicio.Estado == 'Cancelado' %}
+                            <span class="badge bg-danger">Cancelado</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ servicio.Estado }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if servicio.duracion %}
+                            {{ servicio.duracion }} min
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox fs-3 mb-3 d-block"></i>
+                                No hay servicios registrados para esta fecha.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+ document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico: Tipos de Lavado
+    const ctxTipos = document.getElementById('tiposLavadoChart');
+    const ctxHoras = document.getElementById('horasChart');
+
+    // Verificar que los canvas existen
+    if (!ctxTipos || !ctxHoras) {
+        console.error('One or more canvas elements not found');
+        return;
+    }
+
+    // Añadir verificación de Chart.js
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded');
+        return;
+    }
+
+    // Gráfico de Tipos de Lavado
+    const datosTiposLavado = {
+        labels: [
+            {% for tipo, data in tipos_lavado.items() %}
+            '{{ tipo }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for tipo, data in tipos_lavado.items() %}
+                {{ data.count }},
+                {% endfor %}
+            ],
+            backgroundColor: [
+                'rgba(78, 115, 223, 0.8)',
+                'rgba(28, 200, 138, 0.8)',
+                'rgba(246, 194, 62, 0.8)',
+                'rgba(231, 74, 59, 0.8)',
+                'rgba(54, 185, 204, 0.8)'
+            ],
+            hoverOffset: 4
+        }]
+    };
+
+    new Chart(ctxTipos, {
+        type: 'doughnut',
+        data: datosTiposLavado,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value * 100) / total).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Preparar datos para Distribución por Hora
+    const horasCount = Array(14).fill(0); // 14 horas desde las 8:00 hasta las 21:00
+
+    {% for servicio in servicios %}
+        {% if servicio.Hora_Recibe %}
+        var serviceHour = {{ servicio.Hora_Recibe.hour }}; // Usar var en lugar de let
+        if (serviceHour >= 8 && serviceHour <= 21) {
+            horasCount[serviceHour - 8]++;
+        }
+        {% endif %}
+    {% endfor %}
+
+    // Generar etiquetas de horas
+    const horasLabels = Array.from({length: 14}, (_, i) => `${i + 8}:00`);
+
+    // Gráfico de Distribución por Hora
+    new Chart(ctxHoras, {
+        type: 'bar',
+        data: {
+            labels: horasLabels,
+            datasets: [{
+                label: 'Servicios',
+                data: horasCount,
+                backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Distribución de Servicios por Hora'
+                }
+            }
+        }
+    });
+});
+
+</script>
+{% endblock %}

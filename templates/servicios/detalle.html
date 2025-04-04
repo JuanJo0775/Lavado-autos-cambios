@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Servicio #{{ servicio.Id }} - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Servicio #{{ servicio.Id }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('servicios.listar') }}" class="btn btn-sm btn-outline-secondary me-2">
+        <i class="bi bi-arrow-left"></i> Volver a la lista
+    </a>
+
+    {% if servicio.Estado == 'En proceso' %}
+    <form method="POST" action="{{ url_for('servicios.finalizar', id=servicio.Id) }}" class="d-inline">
+        <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('¿Está seguro de que desea finalizar este servicio?')">
+            <i class="bi bi-check-circle"></i> Finalizar Servicio
+        </button>
+    </form>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Estado del servicio -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body d-flex align-items-center">
+                <div class="me-3">
+                    {% if servicio.Estado == 'En proceso' %}
+                    <span class="badge bg-warning text-dark fs-5 p-2">
+                        <i class="bi bi-hourglass-split me-2"></i> En proceso
+                    </span>
+                    {% elif servicio.Estado == 'Completado' %}
+                    <span class="badge bg-success fs-5 p-2">
+                        <i class="bi bi-check-circle me-2"></i> Completado
+                    </span>
+                    {% elif servicio.Estado == 'Cancelado' %}
+                    <span class="badge bg-danger fs-5 p-2">
+                        <i class="bi bi-x-circle me-2"></i> Cancelado
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary fs-5 p-2">
+                        <i class="bi bi-question-circle me-2"></i> {{ servicio.Estado }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="fs-5">
+                        <span class="text-muted">Fecha:</span>
+                        <strong>{{ servicio.Fecha.strftime('%d/%m/%Y') }}</strong>
+                    </div>
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <span class="text-muted">Recepción:</span>
+                            <strong>{{ servicio.Hora_Recibe.strftime('%H:%M') }}</strong>
+                        </div>
+                        {% if servicio.Hora_Entrega %}
+                        <div>
+                            <span class="text-muted">Entrega:</span>
+                            <strong>{{ servicio.Hora_Entrega.strftime('%H:%M') }}</strong>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="ms-auto">
+                    <div class="fs-3 text-primary fw-bold">${{ servicio.Precio }}</div>
+                    <div class="text-muted small">Precio del servicio</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Datos Principales -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información del Servicio</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Información del Vehículo -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="border-bottom pb-2">Vehículo</h6>
+                        <div class="mb-2">
+                            <span class="text-muted">Placa:</span>
+                            <div class="fw-bold">{{ servicio.Placa }}</div>
+                        </div>
+                        {% if servicio.vehiculo %}
+                        <div class="mb-2">
+                            <span class="text-muted">Marca/Modelo:</span>
+                            <div>{{ servicio.vehiculo.Marca }} {{ servicio.vehiculo.Modelo }}</div>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted">Color:</span>
+                            <div>{{ servicio.vehiculo.Color }}</div>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted">Tipo:</span>
+                            <div>{{ servicio.vehiculo.Tipo_Vehículo }}</div>
+                        </div>
+                        {% else %}
+                        <div class="text-danger">Información de vehículo no disponible</div>
+                        {% endif %}
+                        <a href="{{ url_for('vehiculos.detalle', id=servicio.Id_Tipovehículo) }}" class="btn btn-sm btn-outline-primary mt-2">
+                            <i class="bi bi-car-front"></i> Ver Vehículo
+                        </a>
+                    </div>
+
+                    <!-- Información del Tipo de Lavado -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="border-bottom pb-2">Tipo de Lavado</h6>
+                        {% if servicio.tipo_lavado %}
+                        <div class="mb-2">
+                            <span class="text-muted">Servicio:</span>
+                            <div class="fw-bold">{{ servicio.tipo_lavado.Nombre }}</div>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted">Precio Base:</span>
+                            <div>${{ servicio.tipo_lavado.Precio }}</div>
+                        </div>
+                        {% else %}
+                        <div class="text-danger">Información de tipo de lavado no disponible</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Información de los Empleados -->
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2">Empleados Asignados</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <div class="card bg-light">
+                                    <div class="card-body py-2">
+                                        <small class="text-muted">Recepción:</small>
+                                        <div>{{ servicio.empleado_recibe.nombre_completo }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="card bg-light">
+                                    <div class="card-body py-2">
+                                        <small class="text-muted">Lavado:</small>
+                                        <div>{{ servicio.empleado_lava.nombre_completo }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checklist de Ingreso -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Checklist de Ingreso</h5>
+            </div>
+            <div class="card-body">
+                {% if checklist %}
+                <div class="mb-3">
+                    <h6 class="border-bottom pb-2">Estado del Vehículo</h6>
+                    <div class="mb-2">
+                        <span class="badge bg-info">{{ checklist.EstadoVehiculo }}</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <h6 class="border-bottom pb-2">Observaciones</h6>
+                    <div class="bg-light p-3 rounded">
+                        {% if checklist.Observaciones %}
+                        {{ checklist.Observaciones }}
+                        {% else %}
+                        <span class="text-muted">Sin observaciones registradas</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-clipboard-x text-muted" style="font-size: 3rem;"></i>
+                    <p class="mt-3 text-muted">No se encuentra el checklist de ingreso para este servicio.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Insumos Utilizados -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Insumos Utilizados</h5>
+
+                {% if servicio.Estado == 'En proceso' %}
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#agregarInsumoModal">
+                    <i class="bi bi-plus-lg"></i> Agregar Insumo
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Insumo</th>
+                                <th>Tipo</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-end">Precio Unitario</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in insumos_usados %}
+                            <tr>
+                                <td>{{ item.insumo.Nombre }}</td>
+                                <td>{{ item.insumo.tipo_insumo.Nombre }}</td>
+                                <td class="text-center">{{ item.Cantidad_Utilizada }}</td>
+                                <td class="text-end">${{ item.insumo.Precio_Unitario }}</td>
+                                <td class="text-end">${{ item.costo_total }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-3">No se han registrado insumos utilizados para este servicio.</td>
+                            </tr>
+                            {% endfor %}
+
+                            {% if insumos_usados %}
+                            <tr class="table-light">
+                                <td colspan="4" class="text-end fw-bold">Total Insumos:</td>
+                                <td class="text-end fw-bold">${{ insumos_usados|sum(attribute='costo_total') }}</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Adicionales -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Acciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2 flex-wrap">
+                    {% if servicio.Estado == 'En proceso' %}
+                    <form method="POST" action="{{ url_for('servicios.finalizar', id=servicio.Id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-success" onclick="return confirm('¿Está seguro de que desea finalizar este servicio?')">
+                            <i class="bi bi-check-circle me-2"></i> Finalizar Servicio
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('servicios.cancelar', id=servicio.Id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('¿Está seguro de que desea cancelar este servicio?')">
+                            <i class="bi bi-x-circle me-2"></i> Cancelar Servicio
+                        </button>
+                    </form>
+                    {% endif %}
+
+
+
+
+
+
+                    {% if servicio.Estado == 'En proceso' %}
+                    <form method="POST" action="{{ url_for('servicios.finalizar', id=servicio.Id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-success" onclick="return confirm('¿Está seguro de que desea finalizar este servicio?')">
+                            <i class="bi bi-check-circle me-2"></i> Finalizar Servicio
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('servicios.cancelar', id=servicio.Id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('¿Está seguro de que desea cancelar este servicio?')">
+                            <i class="bi bi-x-circle me-2"></i> Cancelar Servicio
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <a href="{{ url_for('servicios.historial_vehiculo', placa=servicio.Placa) }}" class="btn btn-info">
+                        <i class="bi bi-clock-history me-2"></i> Historial del Vehículo
+                    </a>
+
+                    {% if servicio.Estado == 'Completado' %}
+                    <button class="btn btn-outline-primary" onclick="window.print()">
+                        <i class="bi bi-printer me-2"></i> Imprimir Comprobante
+                    </button>
+
+                    <form method="POST" action="{{ url_for('evaluaciones.generar_enlace', servicio_id=servicio.Id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-outline-success">
+                            <i class="bi bi-star me-2"></i> Generar Enlace de Evaluación
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    {% if servicio.evaluacion %}
+                    <a href="{{ url_for('evaluaciones.listar') }}" class="btn btn-outline-warning">
+                        <i class="bi bi-star-fill me-2"></i> Ver Evaluación
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar insumos -->
+{% if servicio.Estado == 'En proceso' %}
+<div class="modal fade" id="agregarInsumoModal" tabindex="-1" aria-labelledby="agregarInsumoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="agregarInsumoModalLabel">Agregar Insumo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('servicios.agregar_insumo', id=servicio.Id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="insumo_id" class="form-label">Insumo</label>
+                        <select class="form-select" id="insumo_id" name="insumo_id" required>
+                            <option value="">Seleccione un insumo</option>
+                            {% for insumo in insumos %}
+                            <option value="{{ insumo.Id }}">{{ insumo.Nombre }} (Stock: {{ insumo.stock_actual }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cantidad" class="form-label">Cantidad</label>
+                        <input type="number" class="form-control" id="cantidad" name="cantidad" min="1" value="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+{% endif %}
+{% endblock %}

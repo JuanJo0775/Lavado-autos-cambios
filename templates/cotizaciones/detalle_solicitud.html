@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Solicitud de Cotización - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Detalle de Solicitud #{{ solicitud.Id }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('cotizaciones.listar_solicitudes') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Solicitudes
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Detalles de la solicitud -->
+    <div class="col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold">Información de la Solicitud</h6>
+                <span class="badge {% if solicitud.Estado == 'Activa' %}bg-success{% else %}bg-secondary{% endif %}">
+                    {{ solicitud.Estado }}
+                </span>
+            </div>
+            <div class="card-body">
+                <h5 class="mb-3">{{ solicitud.insumo.Nombre }}</h5>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="text-muted small">Categoría:</div>
+                        <div>{{ solicitud.insumo.tipo_insumo.Nombre }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Cantidad Requerida:</div>
+                        <div class="h5">{{ solicitud.Cantidad_Requerida }}</div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="text-muted small">Fecha de Publicación:</div>
+                        <div>{{ solicitud.Fecha_Publicacion.strftime('%d/%m/%Y %H:%M') }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small">Fecha Límite:</div>
+                        <div>
+                            {% if solicitud.Fecha_Limite %}
+                            <span class="badge {% if solicitud.Fecha_Limite < now.date() %}bg-danger{% else %}bg-info{% endif %}">
+                                {{ solicitud.Fecha_Limite.strftime('%d/%m/%Y') }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">Sin fecha límite</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="text-muted small mb-1">Descripción:</div>
+                    <div class="bg-light p-3 rounded">
+                        {% if solicitud.Descripcion %}
+                        {{ solicitud.Descripcion }}
+                        {% else %}
+                        <span class="text-muted">Sin descripción</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if solicitud.Estado == 'Activa' %}
+                <form method="POST" action="{{ url_for('cotizaciones.cerrar_solicitud', id=solicitud.Id) }}" class="mt-3">
+                    <button type="submit" class="btn btn-outline-secondary w-100" 
+                            onclick="return confirm('¿Está seguro de cerrar esta solicitud? Los proveedores no podrán enviar más cotizaciones.')">
+                        <i class="bi bi-lock"></i> Cerrar Solicitud
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cotizaciones recibidas -->
+    <div class="col-lg-7">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Cotizaciones Recibidas</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Proveedor</th>
+                                <th class="text-end">Precio</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cotizacion, proveedor in cotizaciones %}
+                            <tr>
+                                <td>
+                                    <strong>{{ proveedor.Nombre }}</strong><br>
+                                    <small class="text-muted">{{ proveedor.Contacto }}</small>
+                                </td>
+                                <td class="text-end">${{ cotizacion.Precio }}</td>
+                                <td>{{ cotizacion.Fecha_Cotizacion.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if cotizacion.Estado == 'Pendiente' %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% elif cotizacion.Estado == 'Aprobada' %}
+                                    <span class="badge bg-success">Aprobada</span>
+                                    {% elif cotizacion.Estado == 'Rechazada' %}
+                                    <span class="badge bg-danger">Rechazada</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <!-- Botón para ver detalles -->
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#cotizacionModal{{ cotizacion.Id }}">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </button>
+                                    
+                                    <!-- Botones para aprobar/rechazar cotización -->
+                                    {% if cotizacion.Estado == 'Pendiente' %}
+                                    <form method="POST" action="{{ url_for('cotizaciones.aprobar_cotizacion', id=cotizacion.Id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-success"
+                                                onclick="return confirm('¿Está seguro de aprobar esta cotización?')">
+                                            <i class="bi bi-check"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('cotizaciones.rechazar_cotizacion', id=cotizacion.Id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('¿Está seguro de rechazar esta cotización?')">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <i class="bi bi-clipboard-x text-muted mb-3" style="font-size: 2.5rem;"></i>
+                                        <h5 class="text-muted">No hay cotizaciones</h5>
+                                        <p class="text-muted mb-3">Aún no se han recibido cotizaciones para esta solicitud.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Comparación de precios -->
+        {% if cotizaciones|length > 1 %}
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Comparación de Precios</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-bar">
+                    <canvas id="cotizacionesChart" style="max-height: 300px;"></canvas>
+                </div>
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>Precio Mínimo:</div>
+                        <div class="font-weight-bold">${{ cotizaciones|map(attribute='0.Precio')|min }}</div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>Precio Máximo:</div>
+                        <div class="font-weight-bold">${{ cotizaciones|map(attribute='0.Precio')|max }}</div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>Precio Promedio:</div>
+                        <div class="font-weight-bold">${{ (cotizaciones|sum(attribute='0.Precio') / cotizaciones|length)|round(2) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modales para cotizaciones -->
+{% for cotizacion, proveedor in cotizaciones %}
+<div class="modal fade" id="cotizacionModal{{ cotizacion.Id }}" tabindex="-1" aria-labelledby="cotizacionModalLabel{{ cotizacion.Id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cotizacionModalLabel{{ cotizacion.Id }}">Detalles de Cotización</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6 class="border-bottom pb-2">Información del Proveedor</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Empresa:</div>
+                            <div>{{ proveedor.Nombre }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Contacto:</div>
+                            <div>{{ proveedor.Contacto }}</div>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Email:</div>
+                            <div>{{ proveedor.Email }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Teléfono:</div>
+                            <div>{{ proveedor.Telefono }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <h6 class="border-bottom pb-2">Detalles de la Cotización</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Precio Ofrecido:</div>
+                            <div class="h5 text-primary">${{ cotizacion.Precio }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Fecha:</div>
+                            <div>{{ cotizacion.Fecha_Cotizacion.strftime('%d/%m/%Y %H:%M') }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h6 class="border-bottom pb-2">Observaciones</h6>
+                    <div class="bg-light p-3 rounded">
+                        {% if cotizacion.Observaciones %}
+                        {{ cotizacion.Observaciones }}
+                        {% else %}
+                        <span class="text-muted">Sin observaciones</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                {% if cotizacion.Estado == 'Pendiente' %}
+                <form method="POST" action="{{ url_for('cotizaciones.aprobar_cotizacion', id=cotizacion.Id) }}" class="me-auto">
+                    <button type="submit" class="btn btn-success"
+                            onclick="return confirm('¿Está seguro de aprobar esta cotización?')">
+                        <i class="bi bi-check"></i> Aprobar
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('cotizaciones.rechazar_cotizacion', id=cotizacion.Id) }}">
+                    <button type="submit" class="btn btn-danger"
+                            onclick="return confirm('¿Está seguro de rechazar esta cotización?')">
+                        <i class="bi bi-x"></i> Rechazar
+                    </button>
+                </form>
+                {% endif %}
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+{% if cotizaciones|length > 1 %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de comparación de precios
+    const ctx = document.getElementById('cotizacionesChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [
+                {% for cotizacion, proveedor in cotizaciones %}
+                "{{ proveedor.Nombre }}",
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Precio Ofrecido ($)',
+                data: [
+                    {% for cotizacion, proveedor in cotizaciones %}
+                    {{ cotizacion.Precio }},
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    {% for cotizacion, proveedor in cotizaciones %}
+                    "{{ 'rgba(40, 167, 69, 0.7)' if cotizacion.Estado == 'Aprobada' else
+                        ('rgba(220, 53, 69, 0.7)' if cotizacion.Estado == 'Rechazada' else 'rgba(0, 123, 255, 0.7)') }}",
+                    {% endfor %}
+                ],
+                borderColor: [
+                    {% for cotizacion, proveedor in cotizaciones %}
+                    "{{ 'rgba(40, 167, 69, 1)' if cotizacion.Estado == 'Aprobada' else
+                        ('rgba(220, 53, 69, 1)' if cotizacion.Estado == 'Rechazada' else 'rgba(0, 123, 255, 1)') }}",
+                    {% endfor %}
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

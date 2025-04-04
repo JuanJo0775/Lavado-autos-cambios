@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Empleados - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Gestión de Empleados{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('empleados.registrar') }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-person-plus"></i> Nuevo Empleado
+    </a>
+    <a href="{{ url_for('empleados.reporte') }}" class="btn btn-sm btn-outline-info me-2">
+        <i class="bi bi-bar-chart"></i> Ver Reporte
+    </a>
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver al Dashboard
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Filtros de búsqueda -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('empleados.listar') }}" class="row g-3">
+            <div class="col-md-6">
+                <label for="nombre" class="form-label">Nombre o Apellidos</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" 
+                       value="{{ filtro_nombre if filtro_nombre else '' }}" placeholder="Buscar por nombre...">
+            </div>
+            <div class="col-md-4">
+                <label for="estado" class="form-label">Estado</label>
+                <select class="form-select" id="estado" name="estado">
+                    <option value="">Todos los estados</option>
+                    <option value="Activo" {% if filtro_estado == 'Activo' %}selected{% endif %}>Activo</option>
+                    <option value="Inactivo" {% if filtro_estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de empleados -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Empleados Registrados</h6>
+        <span class="badge bg-primary">{{ empleados|length }} empleados</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre Completo</th>
+                        <th>Edad</th>
+                        <th>Servicios Hoy</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for empleado in empleados %}
+                    <tr>
+                        <td>{{ empleado.Id }}</td>
+                        <td>
+                            <strong>{{ empleado.nombre_completo }}</strong>
+                        </td>
+                        <td>{{ empleado.edad }} años</td>
+                        <td>
+                            <div><small>Recibidos: <span class="badge bg-info">{{ empleado.servicios_recibidos_hoy }}</span></small></div>
+                            <div><small>Lavados: <span class="badge bg-success">{{ empleado.servicios_lavados_hoy }}</span></small></div>
+                        </td>
+                        <td>
+                            {% if empleado.Estado == 'Activo' %}
+                            <span class="badge bg-success">Activo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('empleados.detalle', id=empleado.Id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Ver
+                            </a>
+                            <a href="{{ url_for('empleados.editar', id=empleado.Id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                            <form method="POST" action="{{ url_for('empleados.cambiar_estado', id=empleado.Id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-{% if empleado.Estado == 'Activo' %}danger{% else %}success{% endif %}"
+                                        onclick="return confirm('¿Está seguro de {% if empleado.Estado == 'Activo' %}desactivar{% else %}activar{% endif %} a este empleado?')">
+                                    <i class="bi bi-{% if empleado.Estado == 'Activo' %}person-x{% else %}person-check{% endif %}"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-people text-muted mb-3" style="font-size: 2.5rem;"></i>
+                                <h5 class="text-muted">No hay empleados registrados</h5>
+                                <p class="text-muted mb-3">No se encontraron empleados con los filtros seleccionados.</p>
+                                <a href="{{ url_for('empleados.registrar') }}" class="btn btn-primary">
+                                    <i class="bi bi-person-plus"></i> Agregar Empleado
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

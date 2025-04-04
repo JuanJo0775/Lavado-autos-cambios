@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}Historial de Vehículo {{ vehiculo.Placa }} - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Historial del Vehículo: {{ vehiculo.Placa }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('vehiculos.detalle', id=vehiculo.Id) }}" class="btn btn-sm btn-outline-primary me-2">
+        <i class="bi bi-car-front"></i> Ver Detalle del Vehículo
+    </a>
+    <a href="{{ url_for('servicios.registrar', placa=vehiculo.Placa) }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-plus-lg"></i> Nuevo Servicio
+    </a>
+    <a href="{{ url_for('servicios.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Servicios
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Información del vehículo -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="border-bottom pb-2 mb-3">Información del Vehículo</h5>
+                <div class="row mb-2">
+                    <div class="col-sm-4 text-muted">Placa:</div>
+                    <div class="col-sm-8"><strong>{{ vehiculo.Placa }}</strong></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4 text-muted">Marca/Modelo:</div>
+                    <div class="col-sm-8">{{ vehiculo.Marca }} {{ vehiculo.Modelo }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-4 text-muted">Tipo:</div>
+                    <div class="col-sm-8">{{ vehiculo.Tipo_Vehículo }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-4 text-muted">Color:</div>
+                    <div class="col-sm-8">
+                        <span class="d-inline-block rounded-circle me-2" style="width: 12px; height: 12px; background-color: {{ vehiculo.Color.lower() }};"></span>
+                        {{ vehiculo.Color }}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h5 class="border-bottom pb-2 mb-3">Resumen de Servicios</h5>
+                <div class="row mb-2">
+                    <div class="col-sm-6 text-muted">Total de servicios:</div>
+                    <div class="col-sm-6"><strong>{{ servicios|length }}</strong></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-6 text-muted">Último servicio:</div>
+                    <div class="col-sm-6">
+                        {% if servicios %}
+                        {{ servicios[0].Fecha.strftime('%d/%m/%Y') }}
+                        {% else %}
+                        No hay servicios registrados
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-6 text-muted">Total gastado:</div>
+                    <div class="col-sm-6 text-success">
+                        ${{ servicios|selectattr('Estado', 'eq', 'Completado')|sum(attribute='Precio')|default(0) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historial de servicios -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Historial de Servicios</h5>
+        <span class="badge bg-primary">{{ servicios|length }} servicios</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Fecha</th>
+                        <th>Tipo de Lavado</th>
+                        <th>Empleados</th>
+                        <th>Precio</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for servicio in servicios %}
+                    <tr>
+                        <td>{{ servicio.Id }}</td>
+                        <td>
+                            <div>{{ servicio.Fecha.strftime('%d/%m/%Y') }}</div>
+                            <small class="text-muted">
+                                Recibido: {{ servicio.Hora_Recibe.strftime('%H:%M') }}
+                                {% if servicio.Hora_Entrega %}
+                                <br>Entregado: {{ servicio.Hora_Entrega.strftime('%H:%M') }}
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            {% if servicio.tipo_lavado %}
+                            {{ servicio.tipo_lavado.Nombre }}
+                            {% else %}
+                            Tipo no encontrado
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div><small>Recibió: {{ servicio.empleado_recibe.nombre_completo }}</small></div>
+                            <div><small>Lavó: {{ servicio.empleado_lava.nombre_completo }}</small></div>
+                        </td>
+                        <td>${{ servicio.Precio }}</td>
+                        <td>
+                            {% if servicio.Estado == 'En proceso' %}
+                            <span class="badge bg-warning text-dark">En proceso</span>
+                            {% elif servicio.Estado == 'Completado' %}
+                            <span class="badge bg-success">Completado</span>
+                            {% elif servicio.Estado == 'Cancelado' %}
+                            <span class="badge bg-danger">Cancelado</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ servicio.Estado }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('servicios.detalle', id=servicio.Id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Ver
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-inbox text-muted mb-3" style="font-size: 2.5rem;"></i>
+                                <h5 class="text-muted">No hay servicios registrados</h5>
+                                <p class="text-muted mb-3">Este vehículo no tiene servicios en su historial.</p>
+                                <a href="{{ url_for('servicios.registrar', placa=vehiculo.Placa) }}" class="btn btn-primary">
+                                    <i class="bi bi-plus-lg"></i> Registrar Nuevo Servicio
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas y gráficos -->
+{% if servicios|length > 0 %}
+<div class="row mt-4">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Servicios por Mes</h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 250px; position: relative;">
+                    <canvas id="serviciosPorMesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Tipos de Lavado</h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 250px; position: relative;">
+                    <canvas id="tiposLavadoChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if servicios|length > 0 %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gráfico de servicios por mes
+        const ctxMes = document.getElementById('serviciosPorMesChart').getContext('2d');
+        
+        // Preparar datos por mes
+        const meses = {};
+        {% for servicio in servicios %}
+        const fecha = '{{ servicio.Fecha.strftime("%Y-%m") }}';
+        if (!meses[fecha]) meses[fecha] = 0;
+        meses[fecha]++;
+        {% endfor %}
+        
+        // Ordenar por fecha
+        const labels = Object.keys(meses).sort();
+        const data = labels.map(l => meses[l]);
+        
+        // Formatear etiquetas para mostrar
+        const etiquetas = labels.map(l => {
+            const [year, month] = l.split('-');
+            return `${month}/${year}`;
+        });
+        
+        new Chart(ctxMes, {
+            type: 'bar',
+            data: {
+                labels: etiquetas,
+                datasets: [{
+                    label: 'Servicios',
+                    data: data,
+                    backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Gráfico de tipos de lavado
+        const ctxTipos = document.getElementById('tiposLavadoChart').getContext('2d');
+        
+        // Preparar datos por tipo de lavado
+        const tiposLavado = {};
+        {% for servicio in servicios %}
+        {% if servicio.tipo_lavado %}
+        const tipo = '{{ servicio.tipo_lavado.Nombre }}';
+        if (!tiposLavado[tipo]) tiposLavado[tipo] = 0;
+        tiposLavado[tipo]++;
+        {% endif %}
+        {% endfor %}
+        
+        // Colores para el gráfico
+        const backgroundColors = [
+            'rgba(78, 115, 223, 0.8)',
+            'rgba(54, 185, 204, 0.8)',
+            'rgba(246, 194, 62, 0.8)',
+            'rgba(231, 74, 59, 0.8)',
+            'rgba(28, 200, 138, 0.8)',
+            'rgba(90, 92, 105, 0.8)'
+        ];
+        
+        new Chart(ctxTipos, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(tiposLavado),
+                datasets: [{
+                    data: Object.values(tiposLavado),
+                    backgroundColor: backgroundColors,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

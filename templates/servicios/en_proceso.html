@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Servicios en Proceso - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Servicios en Proceso{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('servicios.registrar') }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-plus-lg"></i> Nuevo Servicio
+    </a>
+    <a href="{{ url_for('servicios.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Servicios
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Instrucciones rápidas -->
+<div class="alert alert-info mb-4">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-info-circle fs-4 me-3"></i>
+        <div>
+            <strong>Servicios en Proceso</strong>
+            <p class="mb-0">Estos son todos los servicios que actualmente están en proceso. Puede gestionarlos haciendo clic en "Ver Detalle".</p>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de servicios en proceso -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Servicios en Proceso</h6>
+        <span class="badge bg-warning text-dark">{{ servicios|length }} en progreso</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Vehículo</th>
+                        <th>Tipo de Lavado</th>
+                        <th>Recibido</th>
+                        <th>Tiempo Transcurrido</th>
+                        <th>Empleado Asignado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for servicio in servicios %}
+                    <tr>
+                        <td>{{ servicio.Id }}</td>
+                        <td>
+                            <strong>{{ servicio.Placa }}</strong><br>
+                            <small class="text-muted">
+                                {% if servicio.vehiculo %}
+                                {{ servicio.vehiculo.Marca }} {{ servicio.vehiculo.Modelo }}
+                                {% else %}
+                                Vehículo no encontrado
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            {% if servicio.tipo_lavado %}
+                            {{ servicio.tipo_lavado.Nombre }}
+                            {% else %}
+                            Tipo no encontrado
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>Hoy {{ servicio.Hora_Recibe.strftime('%H:%M') }}</div>
+                            <small class="text-muted">{{ servicio.Fecha.strftime('%d/%m/%Y') }}</small>
+                        </td>
+                        <td>
+                            <div class="badge bg-info text-dark">
+                                {% set now = current_time|default(none) %}
+                                {% if now and servicio.Hora_Recibe %}
+                                    {% set elapsed = (now - datetime.combine(servicio.Fecha, servicio.Hora_Recibe)) %}
+                                    {% set hours = (elapsed.total_seconds() / 3600)|int %}
+                                    {% set minutes = ((elapsed.total_seconds() % 3600) / 60)|int %}
+                                    {% if hours > 0 %}
+                                        {{ hours }}h {{ minutes }}m
+                                    {% else %}
+                                        {{ minutes }}m
+                                    {% endif %}
+                                {% else %}
+                                    En proceso
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>{{ servicio.empleado_lava.nombre_completo }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('servicios.detalle', id=servicio.Id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Ver Detalle
+                            </a>
+                            <form method="POST" action="{{ url_for('servicios.finalizar', id=servicio.Id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('¿Está seguro de que desea finalizar este servicio?')">
+                                    <i class="bi bi-check-circle"></i> Finalizar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-emoji-smile text-success mb-3" style="font-size: 2.5rem;"></i>
+                                <h5 class="text-muted">¡No hay servicios en proceso!</h5>
+                                <p class="text-muted mb-3">Todos los servicios han sido completados.</p>
+                                <a href="{{ url_for('servicios.registrar') }}" class="btn btn-primary">
+                                    <i class="bi bi-plus-lg"></i> Registrar Nuevo Servicio
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Panel de acciones rápidas -->
+<div class="row mt-4">
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Acciones Rápidas</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('servicios.registrar') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-2"></i> Nuevo Servicio
+                    </a>
+                    <a href="{{ url_for('reportes.diario') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-graph-up me-2"></i> Reporte de Servicios
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Resumen del Día</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="border rounded p-3 text-center">
+                            <div class="text-muted small">Servicios Completados</div>
+                            <div class="h3 mb-0 text-success">{{ servicios_completados|default(0) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="border rounded p-3 text-center">
+                            <div class="text-muted small">En Proceso</div>
+                            <div class="h3 mb-0 text-warning">{{ servicios|length }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="border rounded p-3 text-center">
+                            <div class="text-muted small">Ingresos</div>
+                            <div class="h3 mb-0 text-primary">${{ ingresos_hoy|default(0) }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Proveedor - LavadoAutos</title>
+    <!-- CSS Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Iconos Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .welcome-section {
+            background-color: #0d6efd;
+            color: white;
+            padding: 40px 0;
+            margin-bottom: 30px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 20px 0;
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="bi bi-droplet-half me-2"></i>
+                <strong>LavadoAutos</strong>
+                <span class="ms-2 badge bg-light text-primary">Portal de Proveedores</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">
+                            <i class="bi bi-house-door"></i> Inicio
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#solicitudes">
+                            <i class="bi bi-clipboard-check"></i> Solicitudes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#miscotizaciones">
+                            <i class="bi bi-card-list"></i> Mis Cotizaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light" href="{{ url_for('cotizaciones.publico_index') }}">
+                            <i class="bi bi-box-arrow-right"></i> Salir
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Welcome Section -->
+    <section class="welcome-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2><i class="bi bi-person-circle me-2"></i>Bienvenido, {{ proveedor.Nombre }}</h2>
+                    <p class="lead mb-0">Desde este portal puede ver las solicitudes de cotización y enviar sus propuestas.</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="bg-white text-dark p-3 rounded">
+                        <div class="d-flex justify-content-between">
+                            <span>ID de Proveedor:</span>
+                            <strong>{{ proveedor.Id }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Contacto:</span>
+                            <strong>{{ proveedor.Contacto }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contenido principal -->
+    <div class="container mb-5">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Resumen -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-clipboard-check mb-3" style="font-size: 2rem;"></i>
+                        <h5 class="card-title">Solicitudes Activas</h5>
+                        <p class="display-4">{{ solicitudes|length }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-card-checklist mb-3" style="font-size: 2rem;"></i>
+                        <h5 class="card-title">Mis Cotizaciones</h5>
+                        <p class="display-4">{{ cotizaciones|length }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-check-circle mb-3" style="font-size: 2rem;"></i>
+                        <h5 class="card-title">Cotizaciones Aprobadas</h5>
+                        <p class="display-4">{{ cotizaciones|selectattr('0.Estado', 'eq', 'Aprobada')|list|length }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Solicitudes Activas -->
+        <section id="solicitudes" class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-clipboard-check me-2"></i>Solicitudes de Cotización Activas</h2>
+            </div>
+
+            <div class="row">
+                {% for solicitud in solicitudes %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">{{ solicitud.insumo.Nombre }}</h5>
+                                <span class="badge bg-primary">{{ solicitud.Cantidad_Requerida }} uds.</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {% if solicitud.Descripcion %}
+                            <p class="card-text">{{ solicitud.Descripcion }}</p>
+                            {% else %}
+                            <p class="card-text text-muted">Sin descripción adicional</p>
+                            {% endif %}
+
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <small class="text-muted">Publicado: {{ solicitud.Fecha_Publicacion.strftime('%d/%m/%Y') }}</small>
+                                {% if solicitud.Fecha_Limite %}
+                                <span class="badge bg-danger">Límite: {{ solicitud.Fecha_Limite.strftime('%d/%m/%Y') }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-0">
+                            <a href="{{ url_for('cotizaciones.publico_cotizar', proveedor_id=proveedor.Id, solicitud_id=solicitud.Id) }}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-currency-dollar me-2"></i>Cotizar Este Producto
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No hay solicitudes de cotización activas en este momento. Vuelva a revisar más tarde.
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Mis Cotizaciones -->
+        <section id="miscotizaciones">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-card-list me-2"></i>Mis Cotizaciones</h2>
+            </div>
+
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center">Fecha</th>
+                                    <th class="text-end">Precio Ofrecido</th>
+                                    <th class="text-center">Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cotizacion, insumo in cotizaciones %}
+                                <tr>
+                                    <td>{{ insumo.Nombre }}</td>
+                                    <td class="text-center">{{ cotizacion.Fecha_Cotizacion.strftime('%d/%m/%Y') }}</td>
+                                    <td class="text-end">${{ cotizacion.Precio }}</td>
+                                    <td class="text-center">
+                                        {% if cotizacion.Estado == 'Pendiente' %}
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                        {% elif cotizacion.Estado == 'Aprobada' %}
+                                        <span class="badge bg-success">Aprobada</span>
+                                        {% elif cotizacion.Estado == 'Rechazada' %}
+                                        <span class="badge bg-danger">Rechazada</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('cotizaciones.publico_cotizar', proveedor_id=proveedor.Id, solicitud_id=1) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i> Editar
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <i class="bi bi-clipboard-x text-muted mb-3" style="font-size: 2rem;"></i>
+                                        <p>Aún no ha enviado ninguna cotización.</p>
+                                        <p>Explore las <a href="#solicitudes">solicitudes activas</a> y envíe sus propuestas.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>LavadoAutos - Portal de Proveedores</h5>
+                    <p>Sistema de cotización de productos para proveedores.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Enlaces</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-white">Inicio</a></li>
+                        <li><a href="#solicitudes" class="text-white">Solicitudes</a></li>
+                        <li><a href="#miscotizaciones" class="text-white">Mis Cotizaciones</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Contacto</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-envelope me-2"></i> proveedores@lavadoautos.com</li>
+                        <li><i class="bi bi-telephone me-2"></i> +123 456 7890</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="bg-white">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2025 LavadoAutos. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

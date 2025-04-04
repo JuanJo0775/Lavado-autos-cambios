@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Cotizaciones - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Gestión de Cotizaciones{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('cotizaciones.nueva_solicitud') }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-plus-lg"></i> Nueva Solicitud
+    </a>
+    <a href="{{ url_for('cotizaciones.reporte') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-bar-chart"></i> Ver Reporte
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-currency-dollar text-primary me-2"></i>Sistema de Cotizaciones</h5>
+                <p class="card-text">Este módulo permite gestionar solicitudes de cotización a proveedores y comparar los precios ofrecidos para tomar mejores decisiones de compra.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tarjetas de acciones rápidas -->
+<div class="row">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 stats-card border-left-primary py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Solicitudes Activas</div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">{{ solicitudes_activas|length }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-clipboard-check fs-2 text-primary"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('cotizaciones.listar_solicitudes') }}" class="btn btn-sm btn-primary w-100">
+                        <i class="bi bi-list"></i> Ver Todas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 stats-card border-left-success py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Nueva Solicitud</div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">Cotización</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-file-earmark-plus fs-2 text-success"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('cotizaciones.nueva_solicitud') }}" class="btn btn-sm btn-success w-100">
+                        <i class="bi bi-plus-lg"></i> Crear Solicitud
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 stats-card border-left-info py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Cotizaciones</div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">Recibidas</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-card-list fs-2 text-info"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('cotizaciones.listar_cotizaciones') }}" class="btn btn-sm btn-info w-100 text-white">
+                        <i class="bi bi-list-check"></i> Ver Cotizaciones
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 stats-card border-left-warning py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Proveedores</div>
+                        <div class="h4 mb-0 font-weight-bold text-gray-800">Registrados</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-people fs-2 text-warning"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('cotizaciones.listar_proveedores') }}" class="btn btn-sm btn-warning w-100">
+                        <i class="bi bi-person-lines-fill"></i> Ver Proveedores
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Portal público -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-globe me-2"></i>Portal Público para Proveedores</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <p>Los proveedores pueden acceder al portal público para registrarse y cotizar los productos que necesitamos.</p>
+                        <p>Comparta el siguiente enlace con sus proveedores:</p>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="enlacePortalPublico" value="{{ request.host_url }}cotizaciones/publico" readonly>
+                            <button class="btn btn-primary" type="button" onclick="copiarEnlace()">
+                                <i class="bi bi-clipboard"></i> Copiar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <a href="{{ url_for('cotizaciones.publico_index') }}" target="_blank" class="btn btn-lg btn-primary">
+                            <i class="bi bi-box-arrow-up-right me-2"></i> Abrir Portal Público
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Solicitudes activas -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Solicitudes de Cotización Activas</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for solicitud in solicitudes_activas[:5] %}
+                    <a href="{{ url_for('cotizaciones.detalle_solicitud', id=solicitud.Id) }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ solicitud.insumo.Nombre }}</h6>
+                            <small>{{ solicitud.Fecha_Publicacion.strftime('%d/%m/%Y') }}</small>
+                        </div>
+                        <p class="mb-1 text-muted">{{ solicitud.Cantidad_Requerida }} unidades</p>
+                        {% if solicitud.Fecha_Limite %}
+                        <small class="text-danger">Límite: {{ solicitud.Fecha_Limite.strftime('%d/%m/%Y') }}</small>
+                        {% endif %}
+                    </a>
+                    {% else %}
+                    <div class="list-group-item text-center py-4">
+                        <i class="bi bi-clipboard-x text-muted mb-3" style="font-size: 2rem;"></i>
+                        <p class="mb-0">No hay solicitudes activas</p>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if solicitudes_activas|length > 5 %}
+                    <a href="{{ url_for('cotizaciones.listar_solicitudes') }}" class="list-group-item list-group-item-action text-center text-primary">
+                        Ver todas las solicitudes ({{ solicitudes_activas|length }} activas)
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cotizaciones recientes -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Cotizaciones Recientes</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Insumo</th>
+                                <th>Proveedor</th>
+                                <th class="text-end">Precio</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cotizacion, proveedor, insumo in cotizaciones_recientes %}
+                            <tr>
+                                <td>{{ insumo.Nombre }}</td>
+                                <td>{{ proveedor.Nombre }}</td>
+                                <td class="text-end">${{ cotizacion.Precio }}</td>
+                                <td>{{ cotizacion.Fecha_Cotizacion.strftime('%d/%m/%Y') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4">
+                                    <i class="bi bi-inbox text-muted mb-3" style="font-size: 2rem;"></i>
+                                    <p class="mb-0">No hay cotizaciones recientes</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if cotizaciones_recientes %}
+            <div class="card-footer">
+                <a href="{{ url_for('cotizaciones.listar_cotizaciones') }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-list-ul"></i> Ver Todas las Cotizaciones
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copiarEnlace() {
+        var enlaceInput = document.getElementById('enlacePortalPublico');
+        enlaceInput.select();
+        enlaceInput.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+        
+        // Cambiar el texto del botón temporalmente
+        var boton = event.target;
+        if (boton.tagName !== 'BUTTON') {
+            boton = boton.closest('button');
+        }
+        var textoOriginal = boton.innerHTML;
+        boton.innerHTML = '<i class="bi bi-check"></i> Copiado';
+        
+        setTimeout(function() {
+            boton.innerHTML = textoOriginal;
+        }, 2000);
+    }
+</script>
+{% endblock %}

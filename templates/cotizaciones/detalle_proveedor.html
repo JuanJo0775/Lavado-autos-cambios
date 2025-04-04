@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle del Proveedor: {{ proveedor.Nombre }} - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Detalle del Proveedor: {{ proveedor.Nombre }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('cotizaciones.listar_proveedores') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Proveedores
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2">Información General</h5>
+                        <div class="mb-3">
+                            <div class="text-muted small">Empresa:</div>
+                            <div class="fw-bold">{{ proveedor.Nombre }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-muted small">Contacto:</div>
+                            <div>{{ proveedor.Contacto }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-muted small">Email:</div>
+                            <div>{{ proveedor.Email }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-muted small">Teléfono:</div>
+                            <div>{{ proveedor.Telefono }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2">Detalles Adicionales</h5>
+                        <div class="mb-3">
+                            <div class="text-muted small">Fecha de Registro:</div>
+                            <div>{{ proveedor.Fecha_Registro.strftime('%d/%m/%Y %H:%M') }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-muted small">Estado:</div>
+                            <div>
+                                {% if proveedor.Estado == 'Activo' %}
+                                <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-muted small">Dirección:</div>
+                            <div>{{ proveedor.Direccion if proveedor.Direccion else 'No especificada' }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-muted small">Cotizaciones Enviadas:</div>
+                            <div class="h4">
+                                <span class="badge bg-info rounded-pill">{{ proveedor.cotizaciones|length }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-center my-4">
+                    <form method="POST" action="{{ url_for('cotizaciones.cambiar_estado_proveedor', id=proveedor.Id) }}">
+                        <button type="submit" class="btn {% if proveedor.Estado == 'Activo' %}btn-outline-danger{% else %}btn-outline-success{% endif %} btn-lg" 
+                                onclick="return confirm('¿Está seguro de cambiar el estado de este proveedor?')">
+                            <i class="bi bi-toggle-{% if proveedor.Estado == 'Activo' %}on{% else %}off{% endif %} me-1"></i>
+                            {% if proveedor.Estado == 'Activo' %}Desactivar{% else %}Activar{% endif %} Proveedor
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Historial de Cotizaciones -->
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="m-0 font-weight-bold">Historial de Cotizaciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Insumo</th>
+                                <th class="text-end">Precio</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cotizacion in proveedor.cotizaciones %}
+                            <tr>
+                                <td>{{ cotizacion.Fecha_Cotizacion.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    <strong>{{ cotizacion.insumo.Nombre }}</strong><br>
+                                    <small class="text-muted">{{ cotizacion.insumo.tipo_insumo.Nombre }}</small>
+                                </td>
+                                <td class="text-end">${{ cotizacion.Precio }}</td>
+                                <td>
+                                    {% if cotizacion.Estado == 'Pendiente' %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% elif cotizacion.Estado == 'Aprobada' %}
+                                    <span class="badge bg-success">Aprobada</span>
+                                    {% elif cotizacion.Estado == 'Rechazada' %}
+                                    <span class="badge bg-danger">Rechazada</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('cotizaciones.detalle_cotizacion', id=cotizacion.Id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="bi bi-clipboard-x mb-2" style="font-size: 2rem;"></i>
+                                        <p>Este proveedor no ha enviado cotizaciones.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Estadísticas de Cotizaciones -->
+                {% if proveedor.cotizaciones|length > 0 %}
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="m-0">Estado de Cotizaciones</h6>
+                            </div>
+                            <div class="card-body">
+                                {% set pendientes = proveedor.cotizaciones|selectattr('Estado', 'eq', 'Pendiente')|list|length %}
+                                {% set aprobadas = proveedor.cotizaciones|selectattr('Estado', 'eq', 'Aprobada')|list|length %}
+                                {% set rechazadas = proveedor.cotizaciones|selectattr('Estado', 'eq', 'Rechazada')|list|length %}
+                                
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="circle-stat bg-warning text-dark">{{ pendientes }}</div>
+                                        <div class="small mt-2">Pendientes</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="circle-stat bg-success">{{ aprobadas }}</div>
+                                        <div class="small mt-2">Aprobadas</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="circle-stat bg-danger">{{ rechazadas }}</div>
+                                        <div class="small mt-2">Rechazadas</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="m-0">Resumen de Precios</h6>
+                            </div>
+                            <div class="card-body">
+                                {% set precios = proveedor.cotizaciones|map(attribute='Precio')|list %}
+                                <div class="row">
+                                    <div class="col-4 text-center">
+                                        <div class="text-muted small">Mínimo</div>
+                                        <div class="h4">${{ precios|min }}</div>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <div class="text-muted small">Promedio</div>
+                                        <div class="h4">${{ (precios|sum / precios|length)|round(2) }}</div>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <div class="text-muted small">Máximo</div>
+                                        <div class="h4">${{ precios|max }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.circle-stat {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+</style>
+{% endblock %}

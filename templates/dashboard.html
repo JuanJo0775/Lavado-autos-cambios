@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Dashboard{% endblock %}
+
+{% block header_actions %}
+    <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-calendar3"></i> Hoy
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#">Última semana</a></li>
+            <li><a class="dropdown-item" href="#">Último mes</a></li>
+            <li><a class="dropdown-item" href="#">Último trimestre</a></li>
+        </ul>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Tarjetas de estadísticas mejoradas con animaciones más rápidas -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-start border-primary border-5 h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Servicios Hoy</div>
+                        <div class="h3 mb-0 font-weight-bold">{{ stats.servicios_hoy }}</div>
+                        <div class="small text-success mt-2">
+                            <i class="bi bi-arrow-up"></i> +15% respecto a ayer
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-car-front-fill stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-start border-success border-5 h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Ingresos Hoy</div>
+                        <div class="h3 mb-0 font-weight-bold">${{ stats.ingresos_hoy }}</div>
+                        <div class="small text-success mt-2">
+                            <i class="bi bi-arrow-up"></i> +10% respecto a ayer
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-currency-dollar stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-start border-info border-5 h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Servicios Pendientes</div>
+                        <div class="h3 mb-0 font-weight-bold">{{ stats.servicios_pendientes }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-hourglass-split stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-start border-warning border-5 h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs text-muted text-uppercase mb-1">
+                            Insumos Críticos</div>
+                        <div class="h3 mb-0 font-weight-bold">{{ stats.insumos_criticos }}</div>
+                        <div class="small text-danger mt-2">
+                            <i class="bi bi-exclamation-triangle"></i> Requieren atención
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-box-seam stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos y estadísticas optimizados -->
+<div class="row">
+    <!-- Gráfico de servicios más compacto -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold">Servicios por día (última semana)</h6>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('reportes.diario') }}">Ver detalle</a></li>
+                        <li><a class="dropdown-item" href="#">Exportar datos</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Reducimos la altura del gráfico para que sea más compacto -->
+                <div style="height: 250px; position: relative;">
+                    <canvas id="serviciosChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top empleados -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Top Empleados (Hoy)</h6>
+            </div>
+            <div class="card-body">
+                {% for empleado in top_empleados %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="mb-0">{{ empleado.nombre }}</h6>
+                        <small class="text-muted">{{ empleado.servicios }} servicios</small>
+                    </div>
+                    <div class="badge bg-primary rounded-pill">{{ empleado.servicios }}</div>
+                </div>
+                <div class="progress mb-3">
+                    <div class="progress-bar" role="progressbar" style="width: {{ (empleado.servicios / top_empleados[0].servicios) * 100 }}%"
+                         aria-valuenow="{{ empleado.servicios }}" aria-valuemin="0" aria-valuemax="{{ top_empleados[0].servicios }}"></div>
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="bi bi-people text-muted mb-2" style="font-size: 2rem;"></i>
+                    <p class="text-muted">No hay datos de empleados para hoy</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Servicios en proceso y stock crítico -->
+<div class="row">
+    <!-- Servicios en proceso -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold">Servicios en Proceso</h6>
+                <a href="{{ url_for('servicios.en_proceso') }}" class="btn btn-sm btn-primary">
+                    Ver todos
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Vehículo</th>
+                                <th>Tipo</th>
+                                <th>Recibido</th>
+                                <th>Empleado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for servicio in servicios_en_proceso %}
+                            <tr>
+                                <td>{{ servicio.Id }}</td>
+                                <td>
+                                    <strong>{{ servicio.Placa }}</strong><br>
+                                    <small class="text-muted">{{ servicio.vehiculo.Marca }} {{ servicio.vehiculo.Modelo }}</small>
+                                </td>
+                                <td>{{ servicio.tipo_lavado.Nombre }}</td>
+                                <td>{{ servicio.Hora_Recibe.strftime('%H:%M') }}</td>
+                                <td>{{ servicio.empleado_lava.nombre_completo }}</td>
+                                <td>
+                                    <a href="{{ url_for('servicios.detalle', id=servicio.Id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-3">No hay servicios en proceso</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insumos con stock crítico -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold">Insumos con Stock Crítico</h6>
+                <a href="{{ url_for('insumos.stock_bajo') }}" class="btn btn-sm btn-primary">
+                    Ver todos
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Insumo</th>
+                                <th>Stock</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for insumo in insumos_criticos %}
+                            <tr>
+                                <td>{{ insumo.Nombre }}</td>
+                                <td>
+                                    <span class="badge bg-danger">{{ insumo.stock_actual }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('inventario.registrar') }}" class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-plus-circle"></i> Stock
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-3">No hay insumos con stock crítico</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Nueva sección de accesos rápidos -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold">Accesos Rápidos</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+                        <a href="{{ url_for('servicios.registrar') }}" class="btn btn-outline-primary w-100 py-3">
+                            <i class="bi bi-plus-circle me-2"></i> Nuevo Servicio
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+                        <a href="{{ url_for('vehiculos.registrar') }}" class="btn btn-outline-success w-100 py-3">
+                            <i class="bi bi-car-front me-2"></i> Nuevo Vehículo
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+                        <a href="{{ url_for('inventario.registrar') }}" class="btn btn-outline-warning w-100 py-3">
+                            <i class="bi bi-box-seam me-2"></i> Agregar Stock
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+                        <a href="{{ url_for('reportes.index') }}" class="btn btn-outline-info w-100 py-3">
+                            <i class="bi bi-bar-chart me-2"></i> Ver Reportes
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gráfico de servicios por día - optimizado para carga más rápida
+    document.addEventListener('DOMContentLoaded', function() {
+        // Definir los datos del gráfico
+        const datos = {
+            labels: [{% for item in servicios_por_dia %}'{{ item.fecha }}',{% endfor %}],
+            datasets: [
+                {
+                    label: 'Servicios realizados',
+                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                    borderColor: 'rgba(78, 115, 223, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(78, 115, 223, 1)',
+                    pointBorderColor: '#fff',
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    data: [{% for item in servicios_por_dia %}{{ item.servicios }},{% endfor %}]
+                }
+            ]
+        };
+
+        // Configuración optimizada del gráfico
+        const config = {
+            type: 'line',
+            data: datos,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 400 // Reducido de 1000ms a 400ms para acelerar las animaciones
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        mode: 'index',
+                        intersect: false,
+                        animation: {
+                            duration: 100 // Tooltips más rápidos
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            drawBorder: false,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'nearest'
+                }
+            }
+        };
+
+        // Crear el gráfico con carga diferida
+        const ctx = document.getElementById('serviciosChart').getContext('2d');
+        new Chart(ctx, config);
+    });
+</script>
+{% endblock %}

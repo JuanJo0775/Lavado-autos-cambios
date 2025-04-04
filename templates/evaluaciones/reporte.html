@@ -1,0 +1,377 @@
+```html
+{% extends "base.html" %}
+
+{% block title %}Reporte de Evaluaciones - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Reporte de Evaluaciones{% endblock %}
+
+{% block header_actions %}
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">
+        <i class="bi bi-printer"></i> Imprimir
+    </button>
+    <a href="{{ url_for('evaluaciones.listar') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Volver a Evaluaciones
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Selector de período -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('evaluaciones.reporte') }}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="periodo" class="form-label">Período a analizar</label>
+                <select class="form-select" id="periodo" name="periodo">
+                    <option value="30" {% if periodo == 30 %}selected{% endif %}>Último mes</option>
+                    <option value="90" {% if periodo == 90 %}selected{% endif %}>Últimos 3 meses</option>
+                    <option value="180" {% if periodo == 180 %}selected{% endif %}>Últimos 6 meses</option>
+                    <option value="365" {% if periodo == 365 %}selected{% endif %}>Último año</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted">
+                    Período analizado: <strong>{{ fecha_inicio.strftime('%d/%m/%Y') if fecha_inicio else 'Todos los tiempos' }}</strong> al <strong>{{ fecha_fin.strftime('%d/%m/%Y') if fecha_fin else 'Hoy' }}</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Actualizar Análisis
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tarjetas de resumen -->
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Evaluaciones</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">{{ total_evaluaciones }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-star fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Promedio General</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">
+                            {% if promedio_general %}{{ promedio_general|round(1) }}{% else %}N/A{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-bar-chart fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Mejor Aspecto Evaluado</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">
+                            {% if mejor_aspecto %}{{ mejor_aspecto }}{% else %}N/A{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-emoji-smile fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Aspecto a Mejorar</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">
+                            {% if peor_aspecto %}{{ peor_aspecto }}{% else %}N/A{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-emoji-frown fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos analíticos -->
+<div class="row">
+    <!-- Promedio por categoría -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Promedio por Categoría</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-bar" style="height: 300px;">
+                    <canvas id="categoriaChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evolución temporal -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Evolución Temporal</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-line" style="height: 300px;">
+                    <canvas id="evolucionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Análisis de servicios -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Análisis por Tipo de Servicio</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Servicio</th>
+                        <th class="text-center">Evaluaciones</th>
+                        <th class="text-center">Tiempo de Espera</th>
+                        <th class="text-center">Amabilidad</th>
+                        <th class="text-center">Calidad de Servicio</th>
+                        <th class="text-center">Promedio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if servicios_evaluados %}
+                    {% for servicio in servicios_evaluados %}
+                    <tr>
+                        <td>{{ servicio.nombre }}</td>
+                        <td class="text-center">{{ servicio.evaluaciones }}</td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <span class="me-2">{{ servicio.tiempo_espera|round(1) }}</span>
+                                <div class="progress" style="width: 60px; height: 6px;">
+                                    <div class="progress-bar {% if servicio.tiempo_espera >= 4 %}bg-success{% elif servicio.tiempo_espera >= 3 %}bg-info{% elif servicio.tiempo_espera >= 2 %}bg-warning{% else %}bg-danger{% endif %}"
+                                         style="width: {{ (servicio.tiempo_espera / 5) * 100 }}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <span class="me-2">{{ servicio.amabilidad|round(1) }}</span>
+                                <div class="progress" style="width: 60px; height: 6px;">
+                                    <div class="progress-bar {% if servicio.amabilidad >= 4 %}bg-success{% elif servicio.amabilidad >= 3 %}bg-info{% elif servicio.amabilidad >= 2 %}bg-warning{% else %}bg-danger{% endif %}"
+                                         style="width: {{ (servicio.amabilidad / 5) * 100 }}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <span class="me-2">{{ servicio.calidad|round(1) }}</span>
+                                <div class="progress" style="width: 60px; height: 6px;">
+                                    <div class="progress-bar {% if servicio.calidad >= 4 %}bg-success{% elif servicio.calidad >= 3 %}bg-info{% elif servicio.calidad >= 2 %}bg-warning{% else %}bg-danger{% endif %}"
+                                         style="width: {{ (servicio.calidad / 5) * 100 }}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            {% set promedio = (servicio.tiempo_espera + servicio.amabilidad + servicio.calidad) / 3 %}
+                            <span class="badge rounded-pill {% if promedio >= 4 %}bg-success{% elif promedio >= 3 %}bg-info{% elif promedio >= 2 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ promedio|round(1) }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-3">No hay datos suficientes para el análisis de servicios en el período seleccionado.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Comentarios destacados -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Comentarios Destacados</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% if comentarios_destacados %}
+            {% for comentario in comentarios_destacados %}
+            <div class="col-md-6 mb-4">
+                <div class="card border-left-{{ comentario.color }} h-100">
+                    <div class="card-body">
+                        <div class="mb-2 text-muted small">
+                            {{ comentario.fecha.strftime('%d/%m/%Y') }} · {{ comentario.servicio }}
+                        </div>
+                        <div class="mb-2">
+                            <span class="fw-bold me-2">Calificación:</span>
+                            {% for i in range(1, 6) %}
+                            <i class="bi bi-star{% if i <= comentario.puntuacion %}-fill text-warning{% else %} text-gray-300{% endif %}"></i>
+                            {% endfor %}
+                        </div>
+                        <div class="card-text">
+                            <em>"{{ comentario.texto }}"</em>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="col-12">
+                <p class="text-center py-3 mb-0">No hay comentarios destacados para mostrar en el período seleccionado.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Recomendaciones -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Recomendaciones y Oportunidades de Mejora</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Aspectos Positivos</h6>
+                <ul class="mb-4">
+                    {% if recomendaciones_positivas %}
+                    {% for recomendacion in recomendaciones_positivas %}
+                    <li class="mb-2">{{ recomendacion }}</li>
+                    {% endfor %}
+                    {% else %}
+                    <li class="mb-2">No hay suficientes datos para generar recomendaciones positivas.</li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Oportunidades de Mejora</h6>
+                <ul class="mb-0">
+                    {% if recomendaciones_mejora %}
+                    {% for recomendacion in recomendaciones_mejora %}
+                    <li class="mb-2">{{ recomendacion }}</li>
+                    {% endfor %}
+                    {% else %}
+                    <li class="mb-2">No hay suficientes datos para generar recomendaciones de mejora.</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico: Promedio por categoría
+    const ctxCategoria = document.getElementById('categoriaChart');
+    
+    if (ctxCategoria) {
+        const tiempo_espera = {{ promedio_tiempo_espera|default(0) }};
+        const amabilidad = {{ promedio_amabilidad|default(0) }};
+        const calidad = {{ promedio_calidad|default(0) }};
+        
+        new Chart(ctxCategoria, {
+            type: 'bar',
+            data: {
+                labels: ['Tiempo de Espera', 'Amabilidad', 'Calidad de Servicio'],
+                datasets: [{
+                    label: 'Puntuación Promedio',
+                    data: [tiempo_espera, amabilidad, calidad],
+                    backgroundColor: [
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(75, 192, 192, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgb(255, 159, 64)',
+                        'rgb(54, 162, 235)',
+                        'rgb(75, 192, 192)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 5
+                    }
+                }
+            }
+        });
+    }
+    
+    // Gráfico: Evolución temporal
+    const ctxEvolucion = document.getElementById('evolucionChart');
+    
+    if (ctxEvolucion && typeof evolucion_data !== 'undefined') {
+        new Chart(ctxEvolucion, {
+            type: 'line',
+            data: {
+                labels: evolucion_data.labels,
+                datasets: [{
+                    label: 'Promedio General',
+                    data: evolucion_data.valores,
+                    borderColor: 'rgb(78, 115, 223)',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: Math.max(0, Math.min(...evolucion_data.valores) - 0.5),
+                        max: Math.min(5, Math.max(...evolucion_data.valores) + 0.5)
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+```

@@ -1,0 +1,495 @@
+```html
+{% extends "base.html" %}
+
+{% block title %}Reporte de Empleados - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Reporte de Rendimiento de Empleados{% endblock %}
+
+{% block header_actions %}
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">
+        <i class="bi bi-printer"></i> Imprimir
+    </button>
+    <a href="{{ url_for('empleados.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Empleados
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Selector de período -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('empleados.reporte') }}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="periodo" class="form-label">Período a analizar</label>
+                <select class="form-select" id="periodo" name="periodo">
+                    <option value="7" {% if periodo == 7 %}selected{% endif %}>Última semana</option>
+                    <option value="30" {% if periodo == 30 %}selected{% endif %}>Último mes</option>
+                    <option value="90" {% if periodo == 90 %}selected{% endif %}>Últimos 3 meses</option>
+                    <option value="180" {% if periodo == 180 %}selected{% endif %}>Últimos 6 meses</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted">
+                    Período analizado: <strong>{{ fecha_inicio.strftime('%d/%m/%Y') if fecha_inicio else 'Todos los tiempos' }}</strong> al <strong>{{ fecha_fin.strftime('%d/%m/%Y') if fecha_fin else 'Hoy' }}</strong>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Actualizar Análisis
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tarjetas de resumen -->
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Empleados</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">{{ total_empleados }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-people fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Empleados Activos</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">{{ empleados_activos }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-person-check fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Servicios Realizados</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">{{ total_servicios }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-car-front fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Tiempo Promedio</div>
+                        <div class="h3 mb-0 font-weight-bold text-gray-800">
+                            {% if tiempo_promedio %}
+                            {{ tiempo_promedio|int }} min
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-stopwatch fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen general de empleados -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Resumen de Rendimiento</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Empleado</th>
+                        <th class="text-center">Servicios Totales</th>
+                        <th class="text-center">Completados</th>
+                        <th class="text-center">Eficiencia</th>
+                        <th class="text-center">Tiempo Promedio</th>
+                        <th class="text-end">Ingresos Generados</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for empleado in empleados %}
+                    <tr>
+                        <td>
+                            <strong>{{ empleado.get('nombre_completo', '') or empleado.get('Nombre', '') + ' ' + empleado.get('Apellidos', '') }}</strong>
+                        </td>
+                        <td class="text-center">{{ empleado.get('servicios_total', 0) }}</td>
+                        <td class="text-center">{{ empleado.get('servicios_completados', 0) }}</td>
+                        <td class="text-center">
+                            {% if empleado.get('servicios_total', 0) > 0 %}
+                            <div class="progress" style="height: 15px;">
+                                {% set eficiencia = (empleado.get('servicios_completados', 0) / empleado.get('servicios_total', 1)) * 100 %}
+                                <div class="progress-bar bg-success" role="progressbar"
+                                     style="width: {{ eficiencia }}%"
+                                     aria-valuenow="{{ eficiencia }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                    {{ eficiencia|int }}%
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if empleado.get('tiempo_promedio') %}
+                            <span class="badge bg-info">{{ empleado.get('tiempo_promedio')|int }} min</span>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">${{ empleado.get('ingresos_generados', 0)|round(2) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="bi bi-people fs-3 mb-3 d-block"></i>
+                                No hay datos de empleados para el período seleccionado.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos de rendimiento -->
+{% if empleados|length > 0 %}
+<div class="row">
+    <!-- Servicios por empleado -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Servicios por Empleado</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="serviciosChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tiempo promedio por empleado -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Tiempo Promedio por Servicio</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="tiemposChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ingresos generados por empleado -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Ingresos Generados por Empleado</h6>
+    </div>
+    <div class="card-body">
+        <div style="height: 300px;">
+            <canvas id="ingresosChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Análisis de productividad -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Análisis de Productividad por Día de la Semana</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Día</th>
+                        <th class="text-center">Total Servicios</th>
+                        <th class="text-center">Promedio Diario</th>
+                        <th class="text-center">Tiempo Promedio</th>
+                        <th class="text-end">Ingresos Promedio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if dias_semana %}
+                    {% for dia in dias_semana %}
+                    <tr>
+                        <td>{{ dia.nombre }}</td>
+                        <td class="text-center">{{ dia.servicios }}</td>
+                        <td class="text-center">{{ dia.promedio|round(1) }}</td>
+                        <td class="text-center">{{ dia.tiempo_promedio|int }} min</td>
+                        <td class="text-end">${{ dia.ingresos_promedio|round(2) }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-3">No hay datos suficientes para el análisis por día de la semana.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Recomendaciones -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Recomendaciones y Conclusiones</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Análisis de Rendimiento</h6>
+                <ul class="mb-4">
+                    {% if empleados|length > 0 %}
+                    {% set mejor_empleado_idx = -1 %}
+                    {% set mejor_empleado_val = 0 %}
+                    {% for idx in range(empleados|length) %}
+                        {% set emp = empleados[idx] %}
+                        {% if emp.get('servicios_completados', 0) > mejor_empleado_val %}
+                            {% set mejor_empleado_idx = idx %}
+                            {% set mejor_empleado_val = emp.get('servicios_completados', 0) %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% set mas_rapido_idx = -1 %}
+                    {% set menor_tiempo = 999999 %}
+                    {% for idx in range(empleados|length) %}
+                        {% set emp = empleados[idx] %}
+                        {% if emp.get('tiempo_promedio') and emp.get('tiempo_promedio', 0) < menor_tiempo %}
+                            {% set mas_rapido_idx = idx %}
+                            {% set menor_tiempo = emp.get('tiempo_promedio', 0) %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if mejor_empleado_idx >= 0 %}
+                    {% set mejor_empleado = empleados[mejor_empleado_idx] %}
+                    <li class="mb-2">El empleado con mayor productividad es <strong>{{ mejor_empleado.get('nombre_completo', '') or mejor_empleado.get('Nombre', '') + ' ' + mejor_empleado.get('Apellidos', '') }}</strong> con {{ mejor_empleado.get('servicios_completados', 0) }} servicios completados.</li>
+                    {% endif %}
+
+                    {% if mas_rapido_idx >= 0 %}
+                    {% set mas_rapido = empleados[mas_rapido_idx] %}
+                    <li class="mb-2">El empleado más eficiente es <strong>{{ mas_rapido.get('nombre_completo', '') or mas_rapido.get('Nombre', '') + ' ' + mas_rapido.get('Apellidos', '') }}</strong> con un tiempo promedio de {{ mas_rapido.get('tiempo_promedio', 0)|int }} minutos por servicio.</li>
+                    {% endif %}
+                    {% set total_completados = 0 %}
+                    {% set total_servicios = 0 %}
+                    {% for emp in empleados %}
+                        {% if "servicios_completados" in emp %}
+                            {% set total_completados = total_completados + emp["servicios_completados"] %}
+                        {% endif %}
+                        {% if "servicios_total" in emp %}
+                            {% set total_servicios = total_servicios + emp["servicios_total"] %}
+                        {% endif %}
+                    {% endfor %}
+                    <li class="mb-2">La tasa promedio de completitud de servicios es del {{ (total_completados / total_servicios * 100)|round(1) if total_servicios > 0 else 0 }}%.</li>
+                    {% else %}
+                    <li class="mb-2">No hay datos suficientes para realizar un análisis de rendimiento en el período seleccionado.</li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Recomendaciones</h6>
+                <ul class="mb-0">
+                    <li class="mb-2">Implementar un programa de reconocimiento para premiar el rendimiento destacado.</li>
+                    <li class="mb-2">Organizar capacitaciones para mejorar los tiempos de servicio de los empleados con promedios más altos.</li>
+                    <li class="mb-2">Considerar la rotación de personal en diferentes tipos de vehículos para mejorar la versatilidad.</li>
+                    <li class="mb-2">Evaluar la posibilidad de bonificaciones por productividad para incentivar la eficiencia.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if empleados|length > 0 %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gráfico: Servicios por Empleado
+        const ctxServicios = document.getElementById('serviciosChart').getContext('2d');
+
+        // Datos para gráfico de servicios
+        const serviciosData = {
+            labels: [
+                {% for empleado in empleados %}
+                '{{ empleado.get("nombre_completo", "") or empleado.get("Nombre", "") + " " + empleado.get("Apellidos", "") }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Servicios Completados',
+                data: [
+                    {% for empleado in empleados %}
+                    {{ empleado.get("servicios_completados", 0) }},
+                    {% endfor %}
+                ],
+                backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                borderWidth: 0
+            }]
+        };
+
+        new Chart(ctxServicios, {
+            type: 'bar',
+            data: serviciosData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Cantidad de Servicios'
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Gráfico: Tiempo Promedio por Empleado
+        const ctxTiempos = document.getElementById('tiemposChart').getContext('2d');
+
+        // Filtrar empleados con tiempo promedio definido
+        const empleadosConTiempo = [
+            {% for empleado in empleados %}
+            {% if empleado.get("tiempo_promedio") %}
+            {
+                nombre: '{{ empleado.get("nombre_completo", "") or empleado.get("Nombre", "") + " " + empleado.get("Apellidos", "") }}',
+                tiempo: {{ empleado.get("tiempo_promedio", 0)|int }}
+            },
+            {% endif %}
+            {% endfor %}
+        ];
+
+        // Ordenar por tiempo (ascendente)
+        empleadosConTiempo.sort((a, b) => a.tiempo - b.tiempo);
+
+        // Datos para gráfico de tiempos
+        const tiemposData = {
+            labels: empleadosConTiempo.map(e => e.nombre),
+            datasets: [{
+                label: 'Minutos por Servicio',
+                data: empleadosConTiempo.map(e => e.tiempo),
+                backgroundColor: 'rgba(28, 200, 138, 0.8)',
+                borderWidth: 0
+            }]
+        };
+
+        new Chart(ctxTiempos, {
+            type: 'bar',
+            data: tiemposData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Tiempo (minutos)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Gráfico: Ingresos por Empleado
+        const ctxIngresos = document.getElementById('ingresosChart').getContext('2d');
+
+        // Datos para gráfico de ingresos
+        const ingresosData = {
+            labels: [
+                {% for empleado in empleados %}
+                '{{ empleado.get("nombre_completo", "") or empleado.get("Nombre", "") + " " + empleado.get("Apellidos", "") }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Ingresos Generados ($)',
+                data: [
+                    {% for empleado in empleados %}
+                    {{ empleado.get("ingresos_generados", 0)|round(2) }},
+                    {% endfor %}
+                ],
+                backgroundColor: 'rgba(246, 194, 62, 0.8)',
+                borderWidth: 0
+            }]
+        };
+
+        new Chart(ctxIngresos, {
+            type: 'bar',
+            data: ingresosData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Ingresos ($)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}
+```

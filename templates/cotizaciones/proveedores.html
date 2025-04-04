@@ -1,0 +1,245 @@
+```html
+{% extends "base.html" %}
+
+{% block title %}Proveedores - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Gestión de Proveedores{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('cotizaciones.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Cotizaciones
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Filtros de búsqueda -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('cotizaciones.listar_proveedores') }}" class="row g-3">
+            <div class="col-md-5">
+                <label for="nombre" class="form-label">Nombre o Empresa</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" 
+                       value="{{ filtro_nombre if filtro_nombre else '' }}" placeholder="Buscar por nombre...">
+            </div>
+            <div class="col-md-5">
+                <label for="estado" class="form-label">Estado</label>
+                <select class="form-select" id="estado" name="estado">
+                    <option value="">Todos los estados</option>
+                    <option value="Activo" {% if filtro_estado == 'Activo' %}selected{% endif %}>Activo</option>
+                    <option value="Inactivo" {% if filtro_estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de proveedores -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Proveedores Registrados</h6>
+        <span class="badge bg-primary">{{ proveedores|length }} proveedores</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Empresa</th>
+                        <th>Contacto</th>
+                        <th>Email/Teléfono</th>
+                        <th>Fecha Registro</th>
+                        <th>Estado</th>
+                        <th class="text-center">Cotizaciones</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for proveedor in proveedores %}
+                    <tr>
+                        <td>{{ proveedor.Id }}</td>
+                        <td>
+                            <strong>{{ proveedor.Nombre }}</strong>
+                        </td>
+                        <td>{{ proveedor.Contacto }}</td>
+                        <td>
+                            <div><small><i class="bi bi-envelope-fill me-1"></i> {{ proveedor.Email }}</small></div>
+                            <div><small><i class="bi bi-telephone-fill me-1"></i> {{ proveedor.Telefono }}</small></div>
+                        </td>
+                        <td>{{ proveedor.Fecha_Registro.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            {% if proveedor.Estado == 'Activo' %}
+                            <span class="badge bg-success">Activo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-info rounded-pill">
+                                {{ proveedor.cotizaciones|length }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('cotizaciones.detalle_proveedor', id=proveedor.Id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Ver
+                            </a>
+                            
+                            <form method="POST" action="{{ url_for('cotizaciones.cambiar_estado_proveedor', id=proveedor.Id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" 
+                                        onclick="return confirm('¿Está seguro de cambiar el estado de este proveedor?')">
+                                    <i class="bi bi-toggle-{% if proveedor.Estado == 'Activo' %}on{% else %}off{% endif %}"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-people text-muted mb-3" style="font-size: 2.5rem;"></i>
+                                <h5 class="text-muted">No hay proveedores registrados</h5>
+                                <p class="text-muted mb-3">No se encontraron proveedores con los filtros seleccionados.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas de proveedores -->
+{% if proveedores|length > 0 %}
+<div class="row mt-4">
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="m-0">Estado de Proveedores</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-pie pb-2">
+                    <canvas id="estadoProveedoresChart"></canvas>
+                </div>
+                <div class="mt-4 text-center small">
+                    <span class="me-2">
+                        <i class="bi bi-circle-fill text-success"></i> Activos
+                    </span>
+                    <span class="me-2">
+                        <i class="bi bi-circle-fill text-secondary"></i> Inactivos
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="m-0">Proveedores más Activos</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Proveedor</th>
+                                <th class="text-center">Cotizaciones</th>
+                                <th class="text-center">Aprobadas</th>
+                                <th class="text-end">% Éxito</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set top_proveedores = [] %}
+                            {% for proveedor in proveedores %}
+                                {% if proveedor.cotizaciones|length > 0 %}
+                                    {% set cotizaciones_count = proveedor.cotizaciones|length %}
+                                    {% set aprobadas_count = proveedor.cotizaciones|selectattr('Estado', 'eq', 'Aprobada')|list|length %}
+                                    {% set porcentaje_exito = (aprobadas_count / cotizaciones_count * 100)|round(1) if cotizaciones_count > 0 else 0 %}
+
+                                    {% set _ = top_proveedores.append({
+                                        'nombre': proveedor.Nombre,
+                                        'cotizaciones': cotizaciones_count,
+                                        'aprobadas': aprobadas_count,
+                                        'porcentaje': porcentaje_exito
+                                    }) %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% set top_proveedores = top_proveedores|sort(attribute='cotizaciones', reverse=true) %}
+
+                            {% for proveedor in top_proveedores[:5] %}
+                            <tr>
+                                <td>{{ proveedor.nombre }}</td>
+                                <td class="text-center">{{ proveedor.cotizaciones }}</td>
+                                <td class="text-center">{{ proveedor.aprobadas }}</td>
+                                <td class="text-end">
+                                    <div class="d-flex align-items-center justify-content-end">
+                                        <div class="me-2">{{ proveedor.porcentaje }}%</div>
+                                        <div class="progress" style="width: 60px; height: 6px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: {{ proveedor.porcentaje }}%"
+                                                 aria-valuenow="{{ proveedor.porcentaje }}" 
+                                                 aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3">No hay datos suficientes para mostrar estadísticas.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if proveedores|length > 0 %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gráfico de estado de proveedores
+        const ctxEstado = document.getElementById('estadoProveedoresChart');
+        
+        if (ctxEstado) {
+            const activos = {{ proveedores|selectattr('Estado', 'eq', 'Activo')|list|length }};
+            const inactivos = {{ proveedores|selectattr('Estado', 'ne', 'Activo')|list|length }};
+            
+            new Chart(ctxEstado, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Activos', 'Inactivos'],
+                    datasets: [{
+                        data: [activos, inactivos],
+                        backgroundColor: ['#1cc88a', '#858796'],
+                        hoverBackgroundColor: ['#17a673', '#717380'],
+                        hoverBorderColor: "rgba(234, 236, 244, 1)",
+                    }],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    cutout: '70%',
+                },
+            });
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}
+```

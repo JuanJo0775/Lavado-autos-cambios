@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Insumo: {{ insumo.Nombre }} - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Insumo: {{ insumo.Nombre }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('insumos.editar', id=insumo.Id) }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-pencil"></i> Editar
+    </a>
+    <a href="{{ url_for('inventario.registrar') }}?insumo={{ insumo.Id }}" class="btn btn-sm btn-success me-2">
+        <i class="bi bi-plus-lg"></i> Agregar Stock
+    </a>
+    <a href="{{ url_for('insumos.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Información general del insumo -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información del Insumo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Nombre</label>
+                            <div class="fs-5 fw-bold">{{ insumo.Nombre }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Categoría</label>
+                            <div class="fs-5">{{ insumo.tipo_insumo.Nombre }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Precio Unitario</label>
+                            <div class="fs-5 text-primary">${{ insumo.Precio_Unitario }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Estado</label>
+                            <div>
+                                {% if insumo.Estado == 'Activo' %}
+                                <span class="badge bg-success fs-6">Activo</span>
+                                {% else %}
+                                <span class="badge bg-secondary fs-6">Inactivo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">ID</label>
+                            <div>{{ insumo.Id }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Valor del Inventario</label>
+                            <div class="text-success">${{ insumo.valor_inventario|round(2) }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estado del inventario -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Estado del Inventario</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-4">
+                    <div class="text-muted small mb-1">Stock Actual</div>
+                    <div class="display-4 mb-2">{{ insumo.stock_actual }}</div>
+                    {% if insumo.stock_actual > 10 %}
+                    <span class="badge bg-success fs-6">Stock Suficiente</span>
+                    {% elif insumo.stock_actual > 0 %}
+                    <span class="badge bg-warning text-dark fs-6">Stock Crítico</span>
+                    {% else %}
+                    <span class="badge bg-danger fs-6">Agotado</span>
+                    {% endif %}
+                </div>
+
+                <div class="progress mb-3" style="height: 15px;">
+                    {% set porcentaje = (insumo.stock_actual / 30) * 100 %}
+                    <div class="progress-bar {% if insumo.stock_actual > 10 %}bg-success{% elif insumo.stock_actual > 0 %}bg-warning{% else %}bg-danger{% endif %}"
+                         role="progressbar"
+                         style="width: {{ porcentaje if porcentaje <= 100 else 100 }}%"
+                         aria-valuenow="{{ insumo.stock_actual }}"
+                         aria-valuemin="0"
+                         aria-valuemax="30"></div>
+                </div>
+                <div class="text-muted small mb-4">Nivel óptimo: 30 unidades</div>
+
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('inventario.registrar') }}?insumo={{ insumo.Id }}" class="btn btn-success">
+                        <i class="bi bi-plus-lg me-2"></i> Agregar Stock
+                    </a>
+                    {% for item in insumo.inventario_items %}
+                    <a href="{{ url_for('inventario.ajustar', id=item.Id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-2"></i> Ajustar Inventario
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historial de uso -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial de Uso</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Servicio</th>
+                        <th>Vehículo</th>
+                        <th class="text-center">Cantidad Utilizada</th>
+                        <th class="text-end">Costo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set usos = insumo_usos|default([]) %}
+                    {% for uso in usos %}
+                    <tr>
+                        <td>{{ uso.servicio.Fecha.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <a href="{{ url_for('servicios.detalle', id=uso.servicio.Id) }}">
+                                Servicio #{{ uso.servicio.Id }}
+                            </a>
+                        </td>
+                        <td>{{ uso.servicio.Placa }}</td>
+                        <td class="text-center">{{ uso.Cantidad_Utilizada }}</td>
+                        <td class="text-end">${{ uso.costo_total|round(2) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox fs-3 mb-3 d-block"></i>
+                                No se encontraron registros de uso para este insumo.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas y gráficos -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Consumo Mensual</h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 250px; position: relative;">
+                    <canvas id="consumoChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Acciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('insumos.editar', id=insumo.Id) }}" class="btn btn-primary">
+                        <i class="bi bi-pencil me-2"></i> Editar Insumo
+                    </a>
+                    <a href="{{ url_for('inventario.registrar') }}?insumo={{ insumo.Id }}" class="btn btn-success">
+                        <i class="bi bi-plus-lg me-2"></i> Agregar Stock
+                    </a>
+
+                    <form method="POST" action="{{ url_for('insumos.cambiar_estado', id=insumo.Id) }}" class="mt-2">
+                        <button type="submit" class="btn btn-outline-secondary w-100" onclick="return confirm('¿Está seguro de cambiar el estado de este insumo?')">
+                            {% if insumo.Estado == 'Activo' %}
+                            <i class="bi bi-toggle-off me-2"></i> Marcar como Inactivo
+                            {% else %}
+                            <i class="bi bi-toggle-on me-2"></i> Marcar como Activo
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+
+                <hr class="my-3">
+
+                <h6 class="border-bottom pb-2 mb-3">Información Adicional</h6>
+                <div class="row mb-2">
+                    <div class="col-6 text-muted">Fecha de Creación:</div>
+                    <div class="col-6">No disponible</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6 text-muted">Última Actualización:</div>
+                    <div class="col-6">No disponible</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gráfico de consumo mensual (datos de ejemplo)
+        const ctx = document.getElementById('consumoChart').getContext('2d');
+
+        const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+        const datos = [5, 12, 8, 15, 10, 7]; // Datos de ejemplo
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: meses,
+                datasets: [{
+                    label: 'Unidades Utilizadas',
+                    data: datos,
+                    borderColor: 'rgba(78, 115, 223, 1)',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
