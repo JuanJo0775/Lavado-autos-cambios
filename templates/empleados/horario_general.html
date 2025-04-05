@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Horario General - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Horario General{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('empleados.jornadas') }}" class="btn btn-sm btn-outline-primary me-2">
+        <i class="bi bi-gear"></i> Gestionar Jornadas
+    </a>
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-printer"></i> Imprimir
+    </button>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Horario de Empleados</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Empleado</th>
+                        {% for dia in dias %}
+                        <th>{{ dia }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for empleado_id, datos in horario.items() %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('empleados.detalle', id=empleado_id) }}">
+                                {{ datos.empleado.nombre_completo }}
+                            </a>
+                            <span class="badge bg-{{ 'success' if datos.empleado.Estado == 'Activo' else 'secondary' }} ms-1">
+                                {{ datos.empleado.Estado }}
+                            </span>
+                        </td>
+                        {% for dia in dias %}
+                        <td>
+                            {% if datos.turnos[dia] %}
+                                {{ datos.turnos[dia].jornada.rango_horario }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="{{ dias|length + 1 }}" class="text-center py-4">
+                            <p class="text-muted mb-0">No hay empleados activos</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        .navbar, .sidebar, .sidebar-toggle, .btn-toolbar {
+            display: none !important;
+        }
+        .main-content {
+            margin-left: 0 !important;
+            padding: 0 !important;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,72 @@
+<!-- empleados/turnos.html -->
+{% extends 'base.html' %}
+
+{% block title %}Turnos de {{ empleado.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Turnos de {{ empleado.nombre_completo }}</h1>
+        <a href="{{ url_for('empleado_bp.asignar_turno', empleado_id=empleado.Id) }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-plus fa-sm text-white-50"></i> Asignar Turno
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-12 col-md-12 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Día</th>
+                                    <th>Horario</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dia, turno in turnos_por_dia.items() %}
+                                <tr>
+                                    <td>{{ dia }}</td>
+                                    <td>
+                                        {% if turno %}
+                                            {{ turno.jornada.rango_horario }}
+                                        {% else %}
+                                            <span class="text-muted">No asignado</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if turno %}
+                                            <a href="{{ url_for('empleado_bp.eliminar_turno', empleado_id=empleado.Id, turno_id=turno.Id) }}"
+                                               class="btn btn-sm btn-danger"
+                                               onclick="return confirm('¿Estás seguro de eliminar este turno?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('empleado_bp.asignar_turno', empleado_id=empleado.Id) }}"
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-plus"></i>
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <a href="{{ url_for('empleado_bp.detalle', empleado_id=empleado.Id) }}"
+               class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver a Perfil
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -36,26 +36,23 @@ def listar():
 
 @empleado_bp.route('/<int:id>')
 def detalle(id):
-    """Ver detalles de un empleado específico"""
+    """Detalle de un empleado específico"""
     empleado = Empleado.query.get_or_404(id)
 
-    # Obtener servicios recientes del empleado (últimos 10)
-    servicios_recibidos = Servicio.query.filter_by(Id_Empleado_Recibe=id).order_by(
-        desc(Servicio.Fecha), desc(Servicio.Hora_Recibe)
-    ).limit(10).all()
+    # Obtener servicios recibidos y lavados
+    servicios_recibidos = Servicio.query.filter_by(Id_Empleado_Recibe=id).order_by(Servicio.Fecha.desc()).limit(5).all()
+    servicios_lavados = Servicio.query.filter_by(Id_Empleado_Lava=id).order_by(Servicio.Fecha.desc()).limit(5).all()
 
-    servicios_lavados = Servicio.query.filter_by(Id_Empleado_Lava=id).order_by(
-        desc(Servicio.Fecha), desc(Servicio.Hora_Recibe)
-    ).limit(10).all()
-
-    # Obtener turnos del empleado
+    # Obtener los turnos asignados
     turnos = TurnoEmpleado.query.filter_by(Id_Empleado=id).all()
 
-    return render_template('empleados/detalle.html',
-                           empleado=empleado,
-                           servicios_recibidos=servicios_recibidos,
-                           servicios_lavados=servicios_lavados,
-                           turnos=turnos)
+    return render_template(
+        'empleados/detalle.html',
+        empleado=empleado,
+        servicios_recibidos=servicios_recibidos,
+        servicios_lavados=servicios_lavados,
+        turnos=turnos
+    )
 
 
 @empleado_bp.route('/registrar', methods=['GET', 'POST'])
@@ -299,3 +296,187 @@ def editar(id):
 
     # Si es GET o hubo error, renderizar formulario con datos actuales
     return render_template('empleados/editar.html', empleado=empleado)
+
+
+# empleados/routes.py (añadir a lo existente)
+
+from flask import Blueprint, render_template, redirect, url_for, flash, request
+from models import db, Empleado, TurnoEmpleado, Jornada
+from sqlalchemy import desc
+from datetime import datetime
+
+
+@empleado_bp.route('/<int:empleado_id>/turnos')
+def turnos_empleado(empleado_id):
+    """Ver los turnos de un empleado específico"""
+    empleado = Empleado.query.get_or_404(empleado_id)
+    turnos = TurnoEmpleado.query.filter_by(Id_Empleado=empleado_id).all()
+
+    # Diccionario para organizar los turnos por día
+    turnos_por_dia = {
+        'Lunes': None, 'Martes': None, 'Miércoles': None,
+        'Jueves': None, 'Viernes': None, 'Sábado': None, 'Domingo': None
+    }
+
+    for turno in turnos:
+        turnos_por_dia[turno.Día] = turno
+
+    return render_template(
+        'empleados/turnos.html',
+        empleado=empleado,
+        turnos_por_dia=turnos_por_dia
+    )
+
+
+# empleados/routes.py (añadir a lo existente)
+
+@empleado_bp.route('/<int:id>/turnos/asignar', methods=['GET', 'POST'])
+def asignar_turno(id):
+    """Asignar o actualizar un turno a un empleado"""
+    empleado = Empleado.query.get_or_404(id)
+    jornadas = Jornada.query.filter_by(Estado='Activo').all()
+
+    dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+
+    if request.method == 'POST':
+        dia = request.form.get('dia')
+        jornada_id = request.form.get('jornada')
+
+        # Validar datos
+        if not dia or not jornada_id or dia not in dias:
+            flash('❌ Datos inválidos. Por favor, inténtalo de nuevo.', 'danger')
+            return redirect(url_for('empleados.asignar_turno', id=id))
+
+        try:
+            jornada_id = int(jornada_id)
+        except ValueError:
+            flash('❌ ID de jornada inválido', 'danger')
+            return redirect(url_for('empleados.asignar_turno', id=id))
+
+        # Verificar si ya existe un turno para ese día
+        turno_existente = TurnoEmpleado.query.filter_by(
+            Id_Empleado=id,
+            Día=dia
+        ).first()
+
+        try:
+            if turno_existente:
+                # Actualizar el turno existente
+                turno_existente.Id_Jornada = jornada_id
+                flash(f'✅ Turno actualizado para {dia}', 'success')
+            else:
+                # Crear nuevo turno
+                nuevo_turno = TurnoEmpleado(
+                    Id_Empleado=id,
+                    Día=dia,
+                    Id_Jornada=jornada_id
+                )
+                db.session.add(nuevo_turno)
+                flash(f'✅ Turno asignado para {dia}', 'success')
+
+            db.session.commit()
+            return redirect(url_for('empleados.detalle', id=id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'❌ Error al asignar turno: {str(e)}', 'danger')
+
+    return render_template(
+        'empleados/asignar_turno.html',
+        empleado=empleado,
+        jornadas=jornadas,
+        dias=dias
+    )
+
+
+@empleado_bp.route('/<int:id>/turnos/<int:turno_id>/eliminar')
+def eliminar_turno(id, turno_id):
+    """Eliminar un turno asignado"""
+    turno = TurnoEmpleado.query.get_or_404(turno_id)
+
+    if turno.Id_Empleado != id:
+        flash('❌ No tienes permiso para eliminar este turno', 'danger')
+        return redirect(url_for('empleados.detalle', id=id))
+
+    try:
+        db.session.delete(turno)
+        db.session.commit()
+        flash('✅ Turno eliminado correctamente', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Error al eliminar turno: {str(e)}', 'danger')
+
+    return redirect(url_for('empleados.detalle', id=id))
+
+
+@empleado_bp.route('/jornadas')
+def jornadas():
+    """Ver todas las jornadas disponibles"""
+    jornadas = Jornada.query.all()
+    return render_template('empleados/jornadas.html', jornadas=jornadas)
+
+
+@empleado_bp.route('/jornadas/nueva', methods=['GET', 'POST'])
+def nueva_jornada():
+    """Crear una nueva jornada de trabajo"""
+    from datetime import datetime
+
+    if request.method == 'POST':
+        hora_inicio = request.form.get('hora_inicio')
+        hora_final = request.form.get('hora_final')
+
+        # Validar datos
+        if not hora_inicio or not hora_final:
+            flash('❌ Debes especificar horario de inicio y fin', 'danger')
+            return redirect(url_for('empleados.nueva_jornada'))
+
+        try:
+            # Convertir strings a objetos time
+            hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time()
+            hora_final_obj = datetime.strptime(hora_final, '%H:%M').time()
+
+            nueva_jornada = Jornada(
+                Hora_Inicio=hora_inicio_obj,
+                Hora_Final=hora_final_obj,
+                Estado='Activo'
+            )
+
+            db.session.add(nueva_jornada)
+            db.session.commit()
+            flash('✅ Jornada creada correctamente', 'success')
+            return redirect(url_for('empleados.jornadas'))
+        except ValueError:
+            flash('❌ Formato de hora inválido. Usa HH:MM', 'danger')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'❌ Error al crear jornada: {str(e)}', 'danger')
+
+    return render_template('empleados/nueva_jornada.html')
+
+
+@empleado_bp.route('/horario_general')
+def horario_general():
+    """Ver el horario general de todos los empleados"""
+    empleados = Empleado.query.filter_by(Estado='Activo').all()
+    dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+
+    # Crear estructura para horario
+    horario = {}
+    for empleado in empleados:
+        horario[empleado.Id] = {
+            'empleado': empleado,
+            'turnos': {}
+        }
+        for dia in dias:
+            horario[empleado.Id]['turnos'][dia] = None
+
+    # Llenar con los turnos existentes
+    turnos = TurnoEmpleado.query.join(Empleado).filter(Empleado.Estado == 'Activo').all()
+    for turno in turnos:
+        if turno.Id_Empleado in horario:
+            horario[turno.Id_Empleado]['turnos'][turno.Día] = turno
+
+    return render_template(
+        'empleados/horario_general.html',
+        horario=horario,
+        dias=dias
+    )

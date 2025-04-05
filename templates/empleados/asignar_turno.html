@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Asignar Turno - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Asignar Turno a {{ empleado.nombre_completo }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('empleados.detalle', id=empleado.Id) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">Información del Turno</h6>
+            </div>
+            <div class="card-body">
+                {% if jornadas|length == 0 %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> No hay jornadas disponibles.
+                    <a href="{{ url_for('empleados.nueva_jornada') }}">Crear una jornada</a>
+                </div>
+                {% endif %}
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="dia" class="form-label">Día de la semana</label>
+                        <select class="form-select" id="dia" name="dia" required>
+                            {% for dia in dias %}
+                            <option value="{{ dia }}">{{ dia }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="jornada" class="form-label">Horario</label>
+                        <select class="form-select" id="jornada" name="jornada" required {% if jornadas|length == 0 %}disabled{% endif %}>
+                            {% for jornada in jornadas %}
+                            <option value="{{ jornada.Id }}">{{ jornada.rango_horario }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('empleados.detalle', id=empleado.Id) }}" class="btn btn-outline-secondary me-md-2">
+                            Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary" {% if jornadas|length == 0 %}disabled{% endif %}>
+                            Guardar Turno
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

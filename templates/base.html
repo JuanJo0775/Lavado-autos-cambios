@@ -96,6 +96,9 @@
                         <a href="{{ url_for('empleados.listar') }}" class="sidebar-link {% if request.blueprint == 'empleados' %}active{% endif %}">
                             <i class="bi bi-people"></i> Empleados
                         </a>
+                        <a href="{{ url_for('empleados.horario_general') }}" class="sidebar-link {% if '/empleados/horario_general' in request.path %}active{% endif %}">
+                            <i class="bi bi-calendar-week"></i> Horario General
+                        </a>
                         <a href="{{ url_for('cotizaciones.index') }}" class="sidebar-link {% if '/cotizaciones' in request.path %}active{% endif %}">
                             <i class="bi bi-currency-dollar"></i> Cotizaciones
                         </a>

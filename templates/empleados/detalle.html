@@ -65,9 +65,9 @@
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="m-0 font-weight-bold">Horario de Trabajo</h6>
-                <button class="btn btn-sm btn-outline-primary">
+                <a href="{{ url_for('empleados.asignar_turno', id=empleado.Id) }}" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-plus"></i> Asignar Turno
-                </button>
+                </a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -85,9 +85,11 @@
                                 <td>{{ turno.Día }}</td>
                                 <td>{{ turno.jornada.rango_horario }}</td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-danger">
+                                    <a href="{{ url_for('empleados.eliminar_turno', id=empleado.Id, turno_id=turno.Id) }}"
+                                       class="btn btn-sm btn-outline-danger"
+                                       onclick="return confirm('¿Está seguro de eliminar este turno?')">
                                         <i class="bi bi-trash"></i>
-                                    </button>
+                                    </a>
                                 </td>
                             </tr>
                             {% else %}
@@ -103,7 +105,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Estadísticas y servicios -->
     <div class="col-lg-8">
         <div class="row">
@@ -125,7 +127,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-md-6 mb-4">
                 <div class="card border-left-success h-100 py-2">
                     <div class="card-body">
@@ -144,7 +146,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Servicios recibidos recientes -->
         <div class="card mb-4">
             <div class="card-header">
@@ -195,7 +197,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Servicios lavados recientes -->
         <div class="card">
             <div class="card-header">
