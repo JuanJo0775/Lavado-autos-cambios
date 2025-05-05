@@ -260,23 +260,6 @@
 
 
 
-
-
-
-                    {% if servicio.Estado == 'En proceso' %}
-                    <form method="POST" action="{{ url_for('servicios.finalizar', id=servicio.Id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-success" onclick="return confirm('¿Está seguro de que desea finalizar este servicio?')">
-                            <i class="bi bi-check-circle me-2"></i> Finalizar Servicio
-                        </button>
-                    </form>
-
-                    <form method="POST" action="{{ url_for('servicios.cancelar', id=servicio.Id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('¿Está seguro de que desea cancelar este servicio?')">
-                            <i class="bi bi-x-circle me-2"></i> Cancelar Servicio
-                        </button>
-                    </form>
-                    {% endif %}
-
                     <a href="{{ url_for('servicios.historial_vehiculo', placa=servicio.Placa) }}" class="btn btn-info">
                         <i class="bi bi-clock-history me-2"></i> Historial del Vehículo
                     </a>

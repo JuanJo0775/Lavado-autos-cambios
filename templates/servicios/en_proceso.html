@@ -72,7 +72,6 @@
                         </td>
                         <td>
                             <div class="badge bg-info text-dark">
-                                {% set now = current_time|default(none) %}
                                 {% if now and servicio.Hora_Recibe %}
                                     {% set elapsed = (now - datetime.combine(servicio.Fecha, servicio.Hora_Recibe)) %}
                                     {% set hours = (elapsed.total_seconds() / 3600)|int %}

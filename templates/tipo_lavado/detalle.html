@@ -1,10 +1,219 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}Detalle de Tipo de Lavado - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Detalle: {{ tipo_lavado.Nombre }}{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('tipo_lavado.editar', id=tipo_lavado.Id) }}" class="btn btn-sm btn-warning me-2">
+        <i class="bi bi-pencil"></i> Editar
+    </a>
+    <a href="{{ url_for('tipo_lavado.insumos', id=tipo_lavado.Id) }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-box-seam"></i> Gestionar Insumos
+    </a>
+    <a href="{{ url_for('tipo_lavado.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a la lista
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Información general -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información del Tipo de Lavado</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Nombre</label>
+                            <div class="fs-5 fw-bold">{{ tipo_lavado.Nombre }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Precio</label>
+                            <div class="fs-5 text-primary">${{ tipo_lavado.Precio }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Estado</label>
+                            <div>
+                                {% if tipo_lavado.Estado == 'activo' %}
+                                <span class="badge bg-success fs-6">Activo</span>
+                                {% else %}
+                                <span class="badge bg-secondary fs-6">Inactivo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Insumo Principal</label>
+                            <div>
+                                {% if tipo_lavado.insumo_principal %}
+                                {{ tipo_lavado.insumo_principal.Nombre }}
+                                {% else %}
+                                <span class="text-muted">No definido</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">ID</label>
+                            <div>{{ tipo_lavado.Id }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Total de Servicios</label>
+                            <div>{{ tipo_lavado.total_servicios }} servicio(s)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones y estado -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Acciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('tipo_lavado.editar', id=tipo_lavado.Id) }}" class="btn btn-warning">
+                        <i class="bi bi-pencil me-2"></i> Editar Tipo de Lavado
+                    </a>
+                    <a href="{{ url_for('tipo_lavado.insumos', id=tipo_lavado.Id) }}" class="btn btn-primary">
+                        <i class="bi bi-box-seam me-2"></i> Gestionar Insumos
+                    </a>
+
+                    {% if tipo_lavado.total_servicios == 0 %}
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#eliminarModal">
+                        <i class="bi bi-trash me-2"></i> Eliminar Tipo de Lavado
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-danger" disabled title="No se puede eliminar porque tiene servicios asociados">
+                        <i class="bi bi-trash me-2"></i> Eliminar Tipo de Lavado
+                    </button>
+                    {% endif %}
+                </div>
+
+                <!-- Estado del stock -->
+                <div class="mt-4">
+                    <h6 class="border-bottom pb-2 mb-3">Estado del Stock</h6>
+                    {% if tipo_lavado.tiene_suficiente_stock() %}
+                    <div class="alert alert-success mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <strong>Stock Suficiente</strong>
+                        <p class="mb-0">Hay suficiente stock de todos los insumos para realizar este tipo de lavado.</p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-danger mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>¡Atención!</strong>
+                        <p class="mb-0">No hay suficiente stock de algunos insumos para realizar este tipo de lavado.</p>
+                        <a href="{{ url_for('inventario.registrar') }}" class="btn btn-sm btn-outline-light mt-2">
+                            <i class="bi bi-plus-lg"></i> Agregar Stock
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insumos requeridos -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Insumos Requeridos</h5>
+                <a href="{{ url_for('tipo_lavado.insumos', id=tipo_lavado.Id) }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-gear"></i> Gestionar Insumos
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Insumo</th>
+                                <th>Categoría</th>
+                                <th class="text-center">Cantidad Requerida</th>
+                                <th class="text-center">Stock Actual</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for insumo_req in insumos_requeridos %}
+                            <tr>
+                                <td>{{ insumo_req.insumo.Nombre }}</td>
+                                <td>{{ insumo_req.insumo.tipo_insumo.Nombre }}</td>
+                                <td class="text-center">{{ insumo_req.Cantidad_Requerida }}</td>
+                                <td class="text-center">{{ insumo_req.insumo.stock_actual }}</td>
+                                <td>
+                                    {% if insumo_req.insumo.stock_actual >= insumo_req.Cantidad_Requerida %}
+                                    <span class="badge bg-success">Suficiente</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Insuficiente</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="bi bi-inbox fs-3 mb-3 d-block"></i>
+                                        No se han definido insumos para este tipo de lavado.
+                                    </div>
+                                    <a href="{{ url_for('tipo_lavado.insumos', id=tipo_lavado.Id) }}" class="btn btn-primary btn-sm mt-2">
+                                        <i class="bi bi-plus-lg"></i> Agregar Insumos
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<div class="modal fade" id="eliminarModal" tabindex="-1" aria-labelledby="eliminarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eliminarModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de que desea eliminar el tipo de lavado <strong>{{ tipo_lavado.Nombre }}</strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Esta acción no se puede deshacer y eliminará también todos los insumos asociados a este tipo de lavado.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{{ url_for('tipo_lavado.eliminar', id=tipo_lavado.Id) }}" method="post">
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

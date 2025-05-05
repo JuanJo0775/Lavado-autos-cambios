@@ -81,6 +81,22 @@ def registrar():
         tipo_lavado = TipoLavado.query.get_or_404(tipo_lavado_id)
         precio = tipo_lavado.Precio
 
+        # Verificar si hay suficiente stock para todos los insumos requeridos
+        if not tipo_lavado.tiene_suficiente_stock():
+            # Encontrar insumos con stock insuficiente
+            insumos_faltantes = []
+            for insumo_req in tipo_lavado.insumos_requeridos:
+                insumo = insumo_req.insumo
+                if insumo.stock_actual < insumo_req.Cantidad_Requerida:
+                    insumos_faltantes.append(
+                        f"{insumo.Nombre} (Stock: {insumo.stock_actual}, Requerido: {insumo_req.Cantidad_Requerida})"
+                    )
+
+            mensaje_error = "❌ No hay suficiente stock para los siguientes insumos: "
+            mensaje_error += ", ".join(insumos_faltantes)
+            flash(mensaje_error, 'danger')
+            return redirect(url_for('servicios.registrar'))
+
         # Crear nuevo servicio
         servicio = Servicio(
             Id_Empleado_Recibe=empleado_recibe_id,
@@ -105,6 +121,10 @@ def registrar():
             EstadoVehiculo="Normal"
         )
         db.session.add(checklist)
+
+        # Consumir automáticamente los insumos requeridos para este tipo de lavado
+        tipo_lavado.consumir_insumos(id_servicio=servicio.Id)
+
         db.session.commit()
 
         flash('✅ Servicio registrado correctamente', 'success')
@@ -114,18 +134,8 @@ def registrar():
     # Obtener todos los empleados sin filtrar por estado para evitar problemas
     empleados = Empleado.query.all()
 
-    # Verificamos si la lista tiene elementos y la mostramos en el log
-    print(f"Número de empleados recuperados: {len(empleados)}")
-    for emp in empleados[:3]:  # Mostrar los primeros 3 como ejemplo
-        print(f"Empleado: ID={emp.Id}, Nombre={emp.nombre_completo}, Estado={emp.Estado}")
-
-    # También obtenemos todos los tipos de lavado sin filtrar por estado
-    tipos_lavado = TipoLavado.query.all()
-
-    # Verificamos si hay tipos de lavado disponibles
-    print(f"Número de tipos de lavado recuperados: {len(tipos_lavado)}")
-    for tipo in tipos_lavado[:3]:  # Mostrar los primeros 3 como ejemplo
-        print(f"Tipo de lavado: ID={tipo.Id}, Nombre={tipo.Nombre}, Estado={tipo.Estado}")
+    # También obtenemos todos los tipos de lavado, filtrando solo los activos
+    tipos_lavado = TipoLavado.query.filter_by(Estado='activo').all()
 
     # Placa por defecto si viene de otro formulario
     placa_inicial = request.args.get('placa', '')
@@ -134,6 +144,7 @@ def registrar():
                            empleados=empleados,
                            tipos_lavado=tipos_lavado,
                            placa_inicial=placa_inicial)
+
 
 @servicio_bp.route('/<int:id>/finalizar', methods=['POST'])
 def finalizar(id):
@@ -166,9 +177,22 @@ def cancelar(id):
 
     # Actualizar estado
     servicio.Estado = 'Cancelado'
+
+    # Devolver insumos al inventario
+    insumos_usados = InsumoPorServicio.query.filter_by(Id_Servicio=id).all()
+    for insumo_usado in insumos_usados:
+        # Buscar el ítem de inventario para este insumo
+        inventario_item = Inventario.query.filter_by(Id_insumo=insumo_usado.Id_Insumo).first()
+        if inventario_item:
+            # Sumar la cantidad usada de vuelta al inventario
+            inventario_item.Stock += insumo_usado.Cantidad_Utilizada
+            # Si estaba agotado, actualizar el estado
+            if inventario_item.Estado == 0 and inventario_item.Stock > 0:
+                inventario_item.Estado = 1  # 1 = Disponible
+
     db.session.commit()
 
-    flash('❌ Servicio cancelado', 'warning')
+    flash('❌ Servicio cancelado y se han devuelto los insumos al inventario', 'warning')
     return redirect(url_for('servicios.detalle', id=id))
 
 
@@ -222,7 +246,6 @@ def agregar_insumo(id):
     return redirect(url_for('servicios.detalle', id=id))
 
 
-
 @servicio_bp.route('/en_proceso')
 def en_proceso():
     """Muestra los servicios que están actualmente en proceso"""
@@ -239,7 +262,8 @@ def en_proceso():
                            servicios=servicios,
                            servicios_completados=servicios_completados,
                            ingresos_hoy=ingresos_hoy,
-                           now=now)
+                           now=now,
+                           datetime=datetime)  # Pasar la clase datetime para usarla en la plantilla
 
 
 @servicio_bp.route('/historial_vehiculo/<placa>')

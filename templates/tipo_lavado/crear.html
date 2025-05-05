@@ -1,10 +1,184 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Crear Tipo de Lavado - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Crear Tipo de Lavado{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('tipo_lavado.listar') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a la lista
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-water text-primary" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">Crear Nuevo Tipo de Lavado</h4>
+                    <p class="text-muted">Complete la información para registrar un nuevo tipo de lavado</p>
+                </div>
+
+                <form method="POST" action="{{ url_for('tipo_lavado.crear') }}" id="tipoLavadoForm">
+                    <div class="row g-3">
+                        <!-- Información básica -->
+                        <div class="col-md-6">
+                            <label for="nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required placeholder="Ej: Lavado Básico">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="precio" class="form-label">Precio <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="precio" name="precio" required step="0.01" min="0.01" placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="insumo_principal" class="form-label">Insumo Principal (Opcional)</label>
+                            <select class="form-select" id="insumo_principal" name="insumo_principal">
+                                <option value="">Seleccione un insumo...</option>
+                                {% for insumo in insumos %}
+                                <option value="{{ insumo.Id }}">{{ insumo.Nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Insumo más representativo de este tipo de lavado</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="estado" class="form-label">Estado <span class="text-danger">*</span></label>
+                            <select class="form-select" id="estado" name="estado" required>
+                                <option value="activo" selected>Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                            </select>
+                        </div>
+
+                        <!-- Insumos requeridos -->
+                        <div class="col-12 mt-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Insumos Requeridos</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <strong>Importante:</strong> Estos insumos se descontarán automáticamente del inventario cada vez que se realice un servicio de este tipo.
+                                    </div>
+
+                                    <div id="insumos-container">
+                                        <!-- Primera fila de insumo (siempre visible) -->
+                                        <div class="row mb-3 insumo-row">
+                                            <div class="col-md-6">
+                                                <select class="form-select insumo-select" name="insumos[]">
+                                                    <option value="">Seleccione un insumo...</option>
+                                                    {% for insumo in insumos %}
+                                                    <option value="{{ insumo.Id }}">{{ insumo.Nombre }} (Stock: {{ insumo.stock_actual }})</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">Cantidad</span>
+                                                    <input type="number" min="1" class="form-control" name="cantidades[]" value="1">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-danger btn-sm remove-insumo" style="display: none;">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-center mt-3">
+                                        <button type="button" id="add-insumo" class="btn btn-success btn-sm">
+                                            <i class="bi bi-plus"></i> Añadir Otro Insumo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary py-2">
+                                <i class="bi bi-save me-2"></i> Guardar Tipo de Lavado
+                            </button>
+                            <a href="{{ url_for('tipo_lavado.listar') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const insumosContainer = document.getElementById('insumos-container');
+    const addInsumoBtn = document.getElementById('add-insumo');
+
+    // Mostrar el botón de eliminar en la primera fila si hay más de una
+    updateRemoveButtons();
+
+    // Añadir nuevo insumo
+    addInsumoBtn.addEventListener('click', function() {
+        const insumoRow = document.querySelector('.insumo-row').cloneNode(true);
+        const inputs = insumoRow.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.value = input.type === 'number' ? 1 : '';
+        });
+
+        insumosContainer.appendChild(insumoRow);
+        updateRemoveButtons();
+
+        // Añadir event listener al nuevo botón de eliminar
+        insumoRow.querySelector('.remove-insumo').addEventListener('click', function() {
+            insumoRow.remove();
+            updateRemoveButtons();
+        });
+    });
+
+    // Añadir event listeners a los botones de eliminar existentes
+    document.querySelectorAll('.remove-insumo').forEach(button => {
+        button.addEventListener('click', function() {
+            this.closest('.insumo-row').remove();
+            updateRemoveButtons();
+        });
+    });
+
+    // Función para actualizar la visibilidad de los botones de eliminar
+    function updateRemoveButtons() {
+        const rows = document.querySelectorAll('.insumo-row');
+        rows.forEach(row => {
+            const btn = row.querySelector('.remove-insumo');
+            btn.style.display = rows.length > 1 ? 'block' : 'none';
+        });
+    }
+
+    // Validación del formulario
+    document.getElementById('tipoLavadoForm').addEventListener('submit', function(e) {
+        // Validar que al menos un insumo tenga un valor seleccionado
+        let hasInsumo = false;
+        const insumoSelects = document.querySelectorAll('.insumo-select');
+
+        insumoSelects.forEach(select => {
+            if (select.value) {
+                hasInsumo = true;
+            }
+        });
+
+        if (!hasInsumo) {
+            alert('Por favor, seleccione al menos un insumo para este tipo de lavado.');
+            e.preventDefault();
+            return false;
+        }
+
+        return true;
+    });
+});
+</script>
+{% endblock %}

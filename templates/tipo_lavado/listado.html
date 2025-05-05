@@ -1,10 +1,157 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}Tipos de Lavado - Sistema de Lavado de Autos{% endblock %}
+
+{% block header_title %}Tipos de Lavado{% endblock %}
+
+{% block header_actions %}
+    <a href="{{ url_for('tipo_lavado.crear') }}" class="btn btn-sm btn-primary me-2">
+        <i class="bi bi-plus-lg"></i> Nuevo Tipo de Lavado
+    </a>
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+{% endblock %}
+
+{% block content %}
+<!-- Filtros de búsqueda -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('tipo_lavado.listar') }}" class="row g-3">
+            <div class="col-md-5">
+                <label for="nombre" class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" value="{{ filtro_nombre }}" placeholder="Buscar por nombre...">
+            </div>
+            <div class="col-md-5">
+                <label for="estado" class="form-label">Estado</label>
+                <select class="form-select" id="estado" name="estado">
+                    <option value="">Todos los estados</option>
+                    <option value="activo" {% if filtro_estado == 'activo' %}selected{% endif %}>Activo</option>
+                    <option value="inactivo" {% if filtro_estado == 'inactivo' %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de tipos de lavado -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold">Lista de Tipos de Lavado</h6>
+        <span class="badge bg-primary">{{ tipos_lavado|length }} tipos</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nombre</th>
+                        <th class="text-end">Precio</th>
+                        <th>Insumos Requeridos</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tipo in tipos_lavado %}
+                    <tr>
+                        <td>{{ tipo.Id }}</td>
+                        <td>{{ tipo.Nombre }}</td>
+                        <td class="text-end">${{ tipo.Precio }}</td>
+                        <td>
+                            {% if tipo.insumos_requeridos %}
+                            <span class="badge bg-info">{{ tipo.insumos_requeridos|length }} insumo(s)</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Sin insumos definidos</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tipo.Estado == 'activo' %}
+                            <span class="badge bg-success">Activo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('tipo_lavado.detalle', id=tipo.Id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('tipo_lavado.editar', id=tipo.Id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{{ url_for('tipo_lavado.insumos', id=tipo.Id) }}" class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-box-seam"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bi bi-water text-muted mb-3" style="font-size: 2.5rem;"></i>
+                                <h5 class="text-muted">No se encontraron tipos de lavado</h5>
+                                <p class="text-muted mb-3">No hay tipos de lavado registrados con los filtros seleccionados.</p>
+                                <a href="{{ url_for('tipo_lavado.crear') }}" class="btn btn-primary">
+                                    <i class="bi bi-plus-lg"></i> Crear Tipo de Lavado
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Panel informativo -->
+<div class="row mt-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">¿Qué son los Tipos de Lavado?</h6>
+            </div>
+            <div class="card-body">
+                <p>Los tipos de lavado son los diferentes servicios que ofrece su negocio. Cada tipo de lavado tiene:</p>
+                <ul>
+                    <li><strong>Nombre:</strong> Identificador del servicio (ej: "Lavado Básico")</li>
+                    <li><strong>Precio:</strong> Costo para el cliente</li>
+                    <li><strong>Insumos requeridos:</strong> Productos que se consumen durante el servicio</li>
+                </ul>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Importante:</strong> Al crear un tipo de lavado, especifique qué insumos se consumen
+                    automáticamente del inventario cada vez que se registra un servicio de este tipo.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Acciones Rápidas</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('tipo_lavado.crear') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-2"></i> Nuevo Tipo de Lavado
+                    </a>
+                    <a href="{{ url_for('insumos.listar') }}" class="btn btn-outline-success">
+                        <i class="bi bi-box-seam me-2"></i> Gestionar Insumos
+                    </a>
+                    <a href="{{ url_for('servicios.registrar') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-car-front me-2"></i> Registrar Servicio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
